@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-06-25
+
 ### Changed
 
 - Widen peer ranges so a host's slightly different version is reused instead of duplicated: `react` is now
@@ -58,6 +60,7 @@ The first public scaffold of effract — React components written as Effect prog
 - **Recipes** — eight typechecked, copy-pasteable call sites under `examples/`.
 - **ADR 0001** — the fiber-reconciliation design and its tradeoffs.
 
-[Unreleased]: https://github.com/get-tmonier/effract/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/get-tmonier/effract/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/get-tmonier/effract/releases/tag/v0.2.1
 [0.2.0]: https://github.com/get-tmonier/effract/releases/tag/v0.2.0
 [0.1.0]: https://github.com/get-tmonier/effract/releases/tag/v0.1.0

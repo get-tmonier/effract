@@ -1,6 +1,6 @@
 {
   "name": "@tmonier/effract-rsc",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Drive effract components with an Effect runtime and stream them as React Server Components (Flight) — from a server or a Web Worker.",
   "keywords": [
     "effect",
