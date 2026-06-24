@@ -3,6 +3,8 @@
 Write React components as Effect programs. The same component runs in a SPA, on a Bun/Node server, in a Web
 Worker, or as a React Server Component.
 
+**Docs & guide → [effract.tmonier.com](https://effract.tmonier.com)**
+
 ```tsx
 import { mount, rec, hook } from '@tmonier/effract';
 import { createRoot } from 'react-dom/client';
