@@ -45,6 +45,29 @@ const en: SiteContent = {
     ],
     caption: 'The same RECs render in all four — proven by the example apps.',
   },
+  philosophy: {
+    label: 'Philosophy',
+    title: 'Keep the rendering layer boring',
+    body: 'A good React component should be clean and almost dull: structure and interaction, nothing more. The complex stuff — services, async data, flags, permissions, retries — belongs outside React. effract agrees. It resolves those dependencies at the composition boundary, inline, and hands your JSX the finished, typed result.',
+    points: [
+      {
+        title: 'The hard parts live in Effect',
+        desc: 'Retries, interruption, concurrency, caching, resource safety, tracing — handled by Effect, outside the render tree, where they are testable and reusable. Your component just declares what it needs.',
+      },
+      {
+        title: 'Async composition becomes trivial',
+        desc: 'No tree of hooks, loading flags and cascading dependencies. Everything is resolved before the component renders, so the body reads top-to-bottom and almost boring — and that is exactly the point.',
+      },
+      {
+        title: 'RSC’s good idea, without the server',
+        desc: 'The valuable part of React Server Components was moving dependency resolution to the composition root — not "React on the server". effract keeps that idea and drops the lock-in: it happens in any runtime.',
+      },
+      {
+        title: 'One primitive, not a zoo',
+        desc: 'Retire the stack of useEffect, a data-fetching library, context, a store and server actions. A single yield* over Effect expresses dependency, async and state — one mental model, end to end.',
+      },
+    ],
+  },
   features: {
     label: 'Why effract',
     title: 'The call site, above all',

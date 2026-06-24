@@ -46,6 +46,12 @@ export interface SiteContent {
     readonly runtimes: readonly RuntimeCard[];
     readonly caption: string;
   };
+  readonly philosophy: {
+    readonly label: string;
+    readonly title: string;
+    readonly body: string;
+    readonly points: readonly Feature[];
+  };
   readonly features: {
     readonly label: string;
     readonly title: string;

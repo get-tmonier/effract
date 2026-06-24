@@ -45,6 +45,29 @@ const fr: SiteContent = {
     ],
     caption: 'Les mêmes RECs s’affichent dans les quatre — démontré par les apps d’exemple.',
   },
+  philosophy: {
+    label: 'Philosophie',
+    title: 'Gardez la couche de rendu ennuyeuse',
+    body: 'Un bon composant React doit être propre, presque banal : structure et interaction, rien de plus. Le reste — services, données async, flags, permissions, retries — n’a pas sa place dans React. effract est d’accord. Il résout ces dépendances au point de composition, en ligne, et remet à votre JSX le résultat fini et typé.',
+    points: [
+      {
+        title: 'Le difficile vit dans Effect',
+        desc: 'Retries, interruption, concurrence, cache, sûreté des ressources, tracing — gérés par Effect, hors de l’arbre de rendu, où ils sont testables et réutilisables. Le composant se contente de déclarer ses besoins.',
+      },
+      {
+        title: 'La composition async devient triviale',
+        desc: 'Plus d’arbre de hooks, d’états de chargement et de dépendances en cascade. Tout est résolu avant le rendu, donc le corps se lit de haut en bas, presque ennuyeux — et c’est précisément le but.',
+      },
+      {
+        title: 'La bonne idée des RSC, sans le serveur',
+        desc: 'Ce qui avait de la valeur dans les React Server Components, c’était de rapprocher la résolution des dépendances de la racine de composition — pas « React sur le serveur ». effract garde l’idée et lâche le verrou : ça marche dans n’importe quel runtime.',
+      },
+      {
+        title: 'Une primitive, pas un zoo',
+        desc: 'Remisez la pile useEffect, librairie de fetch, context, store et server actions. Un seul yield* sur Effect exprime dépendance, async et état — un seul modèle mental, de bout en bout.',
+      },
+    ],
+  },
   features: {
     label: 'Pourquoi effract',
     title: 'Le call site, avant tout',

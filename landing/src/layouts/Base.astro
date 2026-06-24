@@ -47,6 +47,11 @@ const jsonLd = {
     <meta name="theme-color" content="#07090f" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Mark JS-capable so scroll-reveal only hides content when it can reveal it. -->
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="effract" />
     <meta property="og:title" content={title} />

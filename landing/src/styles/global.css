@@ -19,6 +19,9 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Hard backstop against any horizontal overflow. `clip` (not `hidden`) does
+     not create a scroll container, so sticky positioning stays intact. */
+  overflow-x: clip;
 }
 
 [id] {
@@ -141,8 +144,10 @@ body {
   }
 }
 
-/* --- scroll reveal (driven by IntersectionObserver in Base) --- */
-.reveal {
+/* --- scroll reveal (driven by IntersectionObserver in Base) ---
+   Gated behind `.js` so that without JavaScript the content is simply visible
+   (progressive enhancement) rather than stuck at opacity 0. */
+.js .reveal {
   opacity: 0;
   transform: translateY(18px);
   transition:
@@ -151,7 +156,7 @@ body {
   transition-delay: var(--reveal-delay, 0ms);
   will-change: opacity, transform;
 }
-.reveal.is-visible {
+.js .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -178,7 +183,7 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  .reveal {
+  .js .reveal {
     opacity: 1;
     transform: none;
   }

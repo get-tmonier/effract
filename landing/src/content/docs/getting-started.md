@@ -13,11 +13,11 @@ React Server Component.
 ## Install
 
 ```bash
-pnpm add @tmonier/effract effect react
+npm i @tmonier/effract
 ```
 
-> effract requires **React 19.2+** and **Effect v4**. For the RSC renderer, also add
-> `@tmonier/effract-rsc`.
+> effract requires **React 19.2+** and **Effect v4** (installed automatically as peers). For the RSC
+> renderer, also add `@tmonier/effract-rsc`.
 
 ## Your first component
 

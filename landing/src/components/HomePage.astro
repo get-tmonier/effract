@@ -5,6 +5,7 @@ import Features from '#components/Features.astro';
 import Footer from '#components/Footer.astro';
 import Hero from '#components/Hero.astro';
 import Nav from '#components/Nav.astro';
+import Philosophy from '#components/Philosophy.astro';
 import Thesis from '#components/Thesis.astro';
 import Base from '#layouts/Base.astro';
 import type { SiteContent } from '#i18n/types';
@@ -22,6 +23,7 @@ const { content, locale } = Astro.props;
     <Hero content={content} locale={locale} />
     <Thesis content={content} />
     <Everywhere content={content} />
+    <Philosophy content={content} />
     <Features content={content} />
     <Cta content={content} locale={locale} />
   </main>

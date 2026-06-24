@@ -8,14 +8,54 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # Decide what changed so the package jobs and the landing job only run when
+  # their files are touched. The workflow itself always runs, so jobs gated off
+  # by `if:` report as "skipped" — which satisfies required status checks.
+  changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.filter.outputs.packages }}
+      landing: ${{ steps.filter.outputs.landing }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            packages:
+              - 'packages/**'
+              - 'apps/**'
+              - 'examples/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'tsconfig*.json'
+              - '.oxlintrc.json'
+              - '.oxfmtrc.json'
+              - 'knip.config.ts'
+              - '.dependency-cruiser.cjs'
+              - 'lefthook.yml'
+              - '.mise.toml'
+              - 'justfile'
+              - '.github/workflows/ci.yml'
+            landing:
+              - 'landing/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/ci.yml'
+
   verify:
     name: verify
+    needs: changes
+    if: ${{ needs.changes.outputs.packages == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +73,8 @@ jobs:
 
   examples:
     name: build examples
+    needs: changes
+    if: ${{ needs.changes.outputs.packages == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +97,8 @@ jobs:
 
   landing:
     name: landing
+    needs: changes
+    if: ${{ needs.changes.outputs.landing == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -10,7 +10,7 @@ the ordinary React client hydrates them. On the server there's no render pass to
 — a Server Component is simply `async` and awaits its data.
 
 ```bash
-pnpm add @tmonier/effract-rsc
+npm i @tmonier/effract-rsc
 ```
 
 ## A server component
