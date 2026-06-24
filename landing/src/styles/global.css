@@ -32,13 +32,23 @@ body {
   margin: 0;
   min-height: 100vh;
   background-color: var(--bg);
-  background-image:
-    radial-gradient(60rem 60rem at 80% -10%, rgba(124, 92, 255, 0.1), transparent 60%),
-    radial-gradient(50rem 50rem at 0% 10%, rgba(41, 211, 194, 0.08), transparent 55%);
-  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans);
   line-height: 1.6;
+}
+
+/* The ambient gradient as its own fixed layer. A fixed pseudo-element instead of
+   `background-attachment: fixed` avoids the scroll jank / position jumps that
+   `fixed` causes on long pages (especially with `overflow-x: clip` on the root). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(60rem 60rem at 80% -10%, rgba(124, 92, 255, 0.1), transparent 60%),
+    radial-gradient(50rem 50rem at 0% 10%, rgba(41, 211, 194, 0.08), transparent 55%);
 }
 
 ::selection {
@@ -154,7 +164,6 @@ body {
     opacity 0.7s var(--ease-out-expo),
     transform 0.7s var(--ease-out-expo);
   transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform;
 }
 .js .reveal.is-visible {
   opacity: 1;
