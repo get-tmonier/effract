@@ -113,6 +113,4 @@ jobs:
 
       - name: Check the landing site (lint + format + astro check)
         run: pnpm --filter @effract/landing run check
-
-      - name: Build the landing site
-        run: pnpm --filter @effract/landing run build
+        # The build + deploy is handled by Cloudflare Pages; CI only type/lint-checks.
