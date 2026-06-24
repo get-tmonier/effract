@@ -68,12 +68,12 @@ const strands = Array.from({ length: N }, (_, i) => {
     <g mask="url(#fw-mask)" stroke-linecap="round" fill="none">
       {/* dim base strands */}
       {
-        strands.map((s, i) => (
+        strands.map((s) => (
           <path
             class:list={['fw-base', s.react ? 'react' : 'effect']}
             d={s.d}
             stroke={s.react ? 'var(--react)' : 'var(--effect)'}
-            style={`--len:${s.length};--bd:${(i * 0.13).toFixed(2)}s`}
+            style={`--len:${s.length};--dur:${s.dur}s`}
           />
         ))
       }
@@ -116,11 +116,12 @@ const strands = Array.from({ length: N }, (_, i) => {
     stroke-width: 2.5;
     opacity: 0.42;
     filter: drop-shadow(0 0 3px currentColor);
-    /* draw each thread in, staggered — the light traces them into existence */
+    /* The comet draws the line: the base is revealed in lockstep with the pulse
+       (same length, same duration, same linear timing), so the fiber appears
+       exactly behind the leading bright dash on its first pass. */
     stroke-dasharray: var(--len);
     stroke-dashoffset: var(--len);
-    animation: fw-draw 1.7s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
-    animation-delay: var(--bd);
+    animation: fw-draw var(--dur) linear forwards;
   }
   @keyframes fw-draw {
     to {
@@ -143,9 +144,6 @@ const strands = Array.from({ length: N }, (_, i) => {
     stroke-dashoffset: var(--len);
     filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 15px currentColor);
     animation: fw-run var(--dur) linear infinite;
-  }
-  .fw-comet.effect {
-    animation-direction: reverse;
   }
   @keyframes fw-run {
     from {
