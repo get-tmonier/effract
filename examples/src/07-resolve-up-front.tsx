@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { Runtime, view } from '@tmonier/effract';
+import { mount, view } from '@tmonier/effract';
 
 class Flags extends Context.Service<Flags, { readonly beta: boolean }>()('recipes/Flags') {}
 const FlagsLive = Layer.succeed(Flags)({ beta: true });
@@ -22,8 +22,4 @@ export const Banner = view(
   }),
 );
 
-export const App = (): ReactNode => (
-  <Runtime layer={FlagsLive}>
-    <Banner />
-  </Runtime>
-);
+export const App = (): ReactNode => mount(FlagsLive, Banner);

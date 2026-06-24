@@ -9,7 +9,7 @@ import type { AnyEffect } from '#domain/protocol.ts';
 
 /**
  * Something that can run an Effect. Backed in production by a `ManagedRuntime`
- * built once at the `<Runtime>` boundary, which already carries the resolved
+ * built once at the `mount` boundary, which already carries the resolved
  * service environment — so `runSyncExit` resolves services synchronously and
  * only genuinely asynchronous work falls through to `runPromise`.
  */

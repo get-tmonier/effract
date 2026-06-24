@@ -5,7 +5,7 @@
  */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Runtime } from '@tmonier/effract';
+import { mount } from '@tmonier/effract';
 import { AppLive, Dashboard } from '@effract/shared';
 import './styles.css';
 
@@ -14,10 +14,4 @@ if (root === null) {
   throw new Error('missing #root');
 }
 
-createRoot(root).render(
-  <StrictMode>
-    <Runtime layer={AppLive}>
-      <Dashboard />
-    </Runtime>
-  </StrictMode>,
-);
+createRoot(root).render(<StrictMode>{mount(AppLive, Dashboard)}</StrictMode>);

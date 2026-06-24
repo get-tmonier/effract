@@ -35,8 +35,8 @@ const en: SiteContent = {
   },
   everywhere: {
     label: 'One component, every runtime',
-    title: 'Server vs client is just a <Runtime>',
-    body: 'Provide a browser layer and it’s a SPA. Provide a server layer and it streams SSR. Drive it with the Flight renderer and it’s a React Server Component. The component never changes — only the runtime under it does.',
+    title: 'Server vs client is just a mount(...)',
+    body: 'Provide a browser layer and it’s a SPA. Provide a server layer and it streams SSR. Drive it with the Flight renderer and it’s a React Server Component. The component never changes — only the runtime you mount under it does.',
     runtimes: [
       { name: 'SPA', desc: 'Vite, in the browser' },
       { name: 'SSR', desc: 'Bun / Node streaming' },
@@ -73,6 +73,10 @@ const en: SiteContent = {
     title: 'The call site, above all',
     items: [
       {
+        title: 'Incremental, not a rewrite',
+        desc: 'Plain React components stay exactly as they are — ordinary <Component /> JSX, untouched. You write a REC with rec(...) only where one reaches for a service, and place it with {yield* Rec}. The two compose freely in the same tree.',
+      },
+      {
         title: 'Real React, all the way down',
         desc: 'Hooks keep their order. Suspense, error boundaries, memoization, hydration and RSC all just work — because effract renders through React, not around it.',
       },
@@ -90,7 +94,7 @@ const en: SiteContent = {
       },
       {
         title: 'Layers, composed',
-        desc: 'Services depend on services. Compose your runtime with Effect Layers and hand it to a <Runtime> — the components just read the result.',
+        desc: 'Services depend on services. Compose your runtime with Effect Layers and mount it once — the components just read the result.',
       },
       {
         title: 'Typed end to end',

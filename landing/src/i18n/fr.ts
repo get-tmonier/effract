@@ -35,8 +35,8 @@ const fr: SiteContent = {
   },
   everywhere: {
     label: 'Un composant, tous les runtimes',
-    title: 'Serveur ou client : un simple <Runtime>',
-    body: 'Fournissez un layer navigateur et c’est une SPA. Un layer serveur et c’est du SSR en flux. Branchez le moteur Flight et c’est un React Server Component. Le composant ne change pas — seul le runtime sous lui change.',
+    title: 'Serveur ou client : un simple mount(...)',
+    body: 'Fournissez un layer navigateur et c’est une SPA. Un layer serveur et c’est du SSR en flux. Branchez le moteur Flight et c’est un React Server Component. Le composant ne change pas — seul le runtime que vous montez sous lui change.',
     runtimes: [
       { name: 'SPA', desc: 'Vite, dans le navigateur' },
       { name: 'SSR', desc: 'Bun / Node en flux' },
@@ -73,6 +73,10 @@ const fr: SiteContent = {
     title: 'Le call site, avant tout',
     items: [
       {
+        title: 'Incrémental, pas une réécriture',
+        desc: 'Les composants React ordinaires restent tels quels — du JSX <Component /> classique, intact. Vous écrivez un REC avec rec(...) seulement là où il fait appel à un service, et vous le placez avec {yield* Rec}. Les deux se composent librement dans le même arbre.',
+      },
+      {
         title: 'Du vrai React, de bout en bout',
         desc: 'Les hooks gardent leur ordre. Suspense, error boundaries, mémoïsation, hydratation et RSC fonctionnent — parce qu’effract rend à travers React, pas à côté.',
       },
@@ -90,7 +94,7 @@ const fr: SiteContent = {
       },
       {
         title: 'Des layers, composés',
-        desc: 'Les services dépendent de services. Composez votre runtime avec les Layers d’Effect et confiez-le à un <Runtime>.',
+        desc: 'Les services dépendent de services. Composez votre runtime avec les Layers d’Effect et montez-le une fois — les composants se contentent de lire le résultat.',
       },
       {
         title: 'Typé de bout en bout',

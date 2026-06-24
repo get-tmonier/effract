@@ -25,7 +25,7 @@ export const driveServerRec = async <A>(gen: RecGenerator<A>, run: RunEffect): P
     if (isHook(instruction)) {
       throw new Error(
         'effract-rsc: React hooks are not available in Server Components. Yield only Effect ' +
-          'services/effects here, or render this component on the client with `component(...)`.',
+          'services/effects here, or render this component on the client with `rec(...)`.',
       );
     }
     const value = await run(instruction as AnyEffect);

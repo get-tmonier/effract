@@ -11,23 +11,21 @@ import * as Context from 'effect/Context';
 import * as Duration from 'effect/Duration';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { Runtime, component } from '@tmonier/effract';
+import { rec, mount } from '@tmonier/effract';
 
 class Api extends Context.Service<Api, { readonly user: Effect.Effect<string> }>()('recipes/Api') {}
 const ApiLive = Layer.succeed(Api)({
   user: Effect.map(Effect.sleep(Duration.millis(200)), () => 'Ada'),
 });
 
-export const Profile = component(function* () {
+// A REC: it reads a service (and an async one), so it earns the `rec(...)`.
+export const Profile = rec(function* () {
   const api = yield* Api;
   const name = yield* api.user; // ← async: suspends here, resumes with the value
   return <h2>Welcome, {name}</h2>;
 });
 
+// `<Suspense>` is plain React — no REC needed. It wraps the mounted Profile.
 export const App = (): ReactNode => (
-  <Runtime layer={ApiLive}>
-    <Suspense fallback={<p>loading…</p>}>
-      <Profile />
-    </Suspense>
-  </Runtime>
+  <Suspense fallback={<p>loading…</p>}>{mount(ApiLive, Profile)}</Suspense>
 );

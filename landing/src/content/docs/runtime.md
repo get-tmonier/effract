@@ -1,22 +1,25 @@
 ---
 title: The runtime
-description: Services, layers, and the <Runtime> boundary — where server vs client lives.
+description: Services, layers, and wiring it in with mount — where server vs client lives.
 group: Core
 order: 1
 ---
 
-The `<Runtime>` boundary builds an Effect `ManagedRuntime` once from a `Layer` and provides it to a
-React subtree. This is the seam where "server vs client" lives: the same components run wherever you
-provide a runtime.
+`mount` builds an Effect `ManagedRuntime` once from a `Layer` and returns a `ReactNode` for your root
+REC. This is the seam where "server vs client" lives: the same components run wherever you provide a
+runtime.
 
 ```tsx
-<Runtime layer={AppLive}>
-  <Dashboard />
-</Runtime>
+import { mount } from '@tmonier/effract';
+import { createRoot } from 'react-dom/client';
+
+createRoot(el).render(mount(AppLive, Dashboard));
 ```
 
-Services resolve up-front into the runtime's context, so reading one inside a component is a
-synchronous lookup — not an async round-trip.
+`mount(AppLive, Dashboard)` verifies _at compile time_ that `AppLive` provides every service the tree
+needs — a missing service is a type error that names the service. Services then resolve up-front into
+the runtime's context, so reading one inside a component is a synchronous lookup — not an async
+round-trip.
 
 ## Defining a service
 

@@ -57,10 +57,10 @@ const { code, lang = 'tsx', title, class: className = '' } = Astro.props;
   }
   .code-body :global(pre) {
     margin: 0;
-    padding: clamp(14px, 3vw, 20px);
+    padding: clamp(12px, 3vw, 20px);
     background: transparent !important;
-    /* Scales down on small screens so typical snippets never need to scroll. */
-    font-size: clamp(11px, 2.9vw, 13.5px);
+    /* Scales down on small screens so short snippets never need to scroll. */
+    font-size: clamp(10px, 2.9vw, 13.5px);
     line-height: 1.7;
     font-family: var(--font-mono);
     white-space: pre;

@@ -5,7 +5,7 @@
  */
 import type { ReactNode } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { Runtime } from '@tmonier/effract';
+import { mount } from '@tmonier/effract';
 import { AppLive, Dashboard } from '@effract/shared';
 
 export const Route = createFileRoute('/')({
@@ -13,9 +13,5 @@ export const Route = createFileRoute('/')({
 });
 
 function Home(): ReactNode {
-  return (
-    <Runtime layer={AppLive}>
-      <Dashboard />
-    </Runtime>
-  );
+  return mount(AppLive, Dashboard);
 }
