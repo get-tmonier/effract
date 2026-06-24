@@ -1,59 +1,57 @@
 ---
 /**
- * The thesis, alive: two threads of light — teal (React) and violet (Effect) —
- * slither and weave through each other, forever. A legend names the colours so
- * the metaphor is unmistakable: two fiber systems, one woven component.
+ * The thesis as the hero's living backdrop: a field of woven fibers — teal
+ * (React) and violet (Effect) — with bright comets of light racing along them in
+ * opposite directions and crossing at the weave. It sits *behind* the hero
+ * content (dimmed in the centre so text stays readable), so it costs no vertical
+ * space. Two glowing tags name the colours.
  */
 import type { SiteContent } from '#i18n/types';
 
 interface Props {
   content: SiteContent;
-  class?: string;
 }
-const { content, class: className = '' } = Astro.props;
-const { weave } = content;
+const { weave } = Astro.props.content;
 
-const VW = 1040;
-const VH = 200;
+const VW = 1200;
+const VH = 600;
 const my = VH / 2;
-const period = 260; // one weave period; the band is exactly 4 periods wide
-const amp = 52;
-const k = (Math.PI * 2) / period;
-const step = 5;
+const N = 6;
+const amp = 124;
+const periodX = 400; // 3 weave periods across the band
+const k = (Math.PI * 2) / periodX;
+const step = 8;
 
-// A sine thread drawn one period past each edge, so a translateX of one period
-// loops seamlessly — the snake slithers without ever showing an end.
-const thread = (phase: number): string => {
+const strands = Array.from({ length: N }, (_, i) => {
+  const phase = (i / N) * Math.PI * 2;
   let d = '';
-  for (let x = -period; x <= VW + period; x += step) {
+  let len = 0;
+  let prev: [number, number] | null = null;
+  for (let x = 0; x <= VW; x += step) {
     const y = my + Math.sin(x * k + phase) * amp;
-    d += `${x === -period ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)} `;
+    if (prev) len += Math.hypot(x - prev[0], y - prev[1]);
+    prev = [x, y];
+    d += `${x === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)} `;
   }
-  return d.trim();
-};
-const tealPath = thread(0);
-const violetPath = thread(Math.PI); // mirror phase → the two cross and weave
+  const length = Math.round(len);
+  return {
+    d: d.trim(),
+    react: i % 2 === 0,
+    length,
+    gap: length - 46,
+    dur: (3.4 + i * 0.45).toFixed(2),
+  };
+});
 ---
 
-<div class={`fiber-weave ${className}`}>
-  <div class="mb-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
-    <span class="inline-flex items-center gap-2 text-ink-dim">
-      <span class="h-2.5 w-2.5 rounded-full" style="background: var(--teal-bright)"></span>
-      {weave.react}
-    </span>
-    <span class="font-mono text-xs text-muted">×</span>
-    <span class="inline-flex items-center gap-2 text-ink-dim">
-      <span class="h-2.5 w-2.5 rounded-full" style="background: var(--violet-bright)"></span>
-      {weave.effect}
-    </span>
-  </div>
-
+<div class="fw-bg" aria-hidden="true">
   <svg
     class="fw-svg"
     viewBox={`0 0 ${VW} ${VH}`}
+    preserveAspectRatio="xMidYMid slice"
+    fill="none"
     role="img"
     aria-label={weave.aria}
-    preserveAspectRatio="xMidYMid meet"
   >
     <defs>
       <linearGradient id="fw-teal" x1="0" y1="0" x2={VW} y2="0" gradientUnits="userSpaceOnUse">
@@ -66,75 +64,150 @@ const violetPath = thread(Math.PI); // mirror phase → the two cross and weave
         <stop offset="0.5" stop-color="var(--violet-bright)"></stop>
         <stop offset="1" stop-color="var(--violet)"></stop>
       </linearGradient>
-      <linearGradient id="fw-fade" x1="0" y1="0" x2={VW} y2="0" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stop-color="black"></stop>
-        <stop offset="0.13" stop-color="white"></stop>
-        <stop offset="0.87" stop-color="white"></stop>
-        <stop offset="1" stop-color="black"></stop>
-      </linearGradient>
-      <mask id="fw-edges">
-        <rect width={VW} height={VH} fill="url(#fw-fade)"></rect>
+      <!-- dim the centre so the headline stays readable; bright toward the edges -->
+      <radialGradient id="fw-vig" cx="0.5" cy="0.5" r="0.62">
+        <stop offset="0" stop-color="#222"></stop>
+        <stop offset="0.5" stop-color="#5a5a5a"></stop>
+        <stop offset="0.95" stop-color="#fff"></stop>
+      </radialGradient>
+      <mask id="fw-mask">
+        <rect width={VW} height={VH} fill="url(#fw-vig)"></rect>
       </mask>
     </defs>
 
-    <!-- static parent holds the edge fade; the inner group slithers within it -->
-    <g mask="url(#fw-edges)">
-      <g class="fw-slither" fill="none" stroke-width="4" stroke-linecap="round">
-        <path class="fw-thread teal" d={tealPath} stroke="url(#fw-teal)"></path>
-        <path class="fw-thread violet" d={violetPath} stroke="url(#fw-violet)"></path>
-        <!-- a brighter core rides on top for the neon look -->
-        <path class="fw-core teal" d={tealPath}></path>
-        <path class="fw-core violet" d={violetPath}></path>
-      </g>
+    <g mask="url(#fw-mask)" stroke-linecap="round" fill="none">
+      {/* dim base strands */}
+      {
+        strands.map((s) => (
+          <path
+            class:list={['fw-base', s.react ? 'react' : 'effect']}
+            d={s.d}
+            stroke={s.react ? 'url(#fw-teal)' : 'url(#fw-violet)'}
+          />
+        ))
+      }
+      {/* bright comets of light — React one way, Effect the other */}
+      {
+        strands.map((s) => (
+          <path
+            class:list={['fw-comet', s.react ? 'react' : 'effect']}
+            d={s.d}
+            style={`--len:${s.length};--gap:${s.gap};--dur:${s.dur}s`}
+          />
+        ))
+      }
     </g>
   </svg>
 
-  <p class="mt-5 text-center text-sm text-muted text-pretty">
-    {weave.caption}
-    <span class="font-mono text-teal">yield*</span>
-    {weave.captionEnd}
-  </p>
+  <span class="fw-tag teal">{weave.react}</span>
+  <span class="fw-tag violet">{weave.effect}</span>
 </div>
 
 <style>
+  .fw-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
   .fw-svg {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
   }
-  .fw-thread {
-    filter: drop-shadow(0 0 8px currentColor);
-    opacity: 0.85;
+
+  .fw-base {
+    stroke-width: 2.5;
+    opacity: 0.32;
+    filter: drop-shadow(0 0 3px currentColor);
   }
-  .fw-thread.teal,
-  .fw-core.teal {
+  .fw-base.react,
+  .fw-comet.react {
     color: var(--teal-bright);
   }
-  .fw-thread.violet,
-  .fw-core.violet {
+  .fw-base.effect,
+  .fw-comet.effect {
     color: var(--violet-bright);
   }
-  .fw-core {
-    fill: none;
-    stroke: color-mix(in srgb, currentColor 55%, white);
-    stroke-width: 1.6;
-    stroke-linecap: round;
+
+  .fw-comet {
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-dasharray: 46 var(--gap);
+    stroke-dashoffset: var(--len);
+    filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 14px currentColor);
+    animation: fw-run var(--dur) linear infinite;
+  }
+  .fw-comet.effect {
+    animation-direction: reverse;
+  }
+  @keyframes fw-run {
+    from {
+      stroke-dashoffset: var(--len);
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
   }
 
-  /* The slither: translate exactly one period for a seamless loop. */
-  .fw-slither {
-    animation: fw-slither 9s linear infinite;
-    will-change: transform;
+  /* Glowing tags on the fibers — not a chart legend. */
+  .fw-tag {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(4px);
+    color: currentColor;
+    box-shadow: 0 0 16px -4px currentColor;
+    white-space: nowrap;
   }
-  @keyframes fw-slither {
-    to {
-      transform: translateX(-260px);
+  .fw-tag::before {
+    content: '';
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.4rem;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+    vertical-align: middle;
+  }
+  .fw-tag.teal {
+    color: var(--teal-bright);
+    top: 16%;
+    left: 6%;
+  }
+  .fw-tag.violet {
+    color: var(--violet-bright);
+    bottom: 16%;
+    right: 6%;
+  }
+
+  @media (max-width: 640px) {
+    .fw-tag {
+      font-size: 0.66rem;
+    }
+    .fw-tag.teal {
+      top: 9%;
+      left: 4%;
+    }
+    .fw-tag.violet {
+      bottom: 9%;
+      right: 4%;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .fw-slither {
+    .fw-comet {
       animation: none;
+      opacity: 0;
+    }
+    .fw-base {
+      opacity: 0.45;
     }
   }
 </style>
