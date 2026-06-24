@@ -13,14 +13,14 @@ const { content, locale } = Astro.props;
 const { hero } = content;
 ---
 
-<section class="relative flex min-h-[100svh] items-center overflow-hidden">
+<section class="relative flex min-h-[88svh] items-center overflow-hidden">
   <div class="hero-grid" aria-hidden="true"></div>
   <div class="hero-aurora" aria-hidden="true"></div>
 
   <!-- the living backdrop: two fibers, woven, with light racing through them -->
   <FiberWeave content={content} />
 
-  <div class="reveal relative z-10 mx-auto w-full max-w-3xl px-5 py-24 text-center">
+  <div class="reveal relative z-10 mx-auto w-full max-w-3xl px-5 py-16 text-center">
     <div class="mb-6 inline-flex items-center gap-2.5">
       <Logo size={40} draw />
       <span
