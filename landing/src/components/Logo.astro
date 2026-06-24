@@ -2,12 +2,16 @@
 interface Props {
   /** pixel size of the square mark */
   size?: number;
-  /** animate the strands drawing themselves in */
+  /** play the dramatic draw-in (two fibers weaving together) */
   draw?: boolean;
   class?: string;
 }
 const { size = 36, draw = false, class: className = '' } = Astro.props;
 const uid = Math.random().toString(36).slice(2, 8);
+
+// The two braided strands — violet (Effect) over/under teal (React).
+const dV = 'M12,60 C 18,44 30,44 36,60 C 42,76 54,76 60,60 C 66,44 78,44 84,60 C 90,76 102,76 108,60';
+const dT = 'M12,60 C 18,76 30,76 36,60 C 42,44 54,44 60,60 C 66,76 78,76 84,60 C 90,44 102,44 108,60';
 ---
 
 <svg
@@ -15,7 +19,7 @@ const uid = Math.random().toString(36).slice(2, 8);
   height={size}
   viewBox="0 0 120 120"
   fill="none"
-  class={className}
+  class={`logo ${className}`}
   role="img"
   aria-label="effract"
   data-draw={draw ? '' : undefined}
@@ -34,24 +38,92 @@ const uid = Math.random().toString(36).slice(2, 8);
       <circle cx="60" cy="60" r="9.5" fill="black"></circle>
     </mask>
   </defs>
-  <g fill="none" stroke-width="9" stroke-linecap="round" class="weave">
-    <path
-      d="M12,60 C 18,44 30,44 36,60 C 42,76 54,76 60,60 C 66,44 78,44 84,60 C 90,76 102,76 108,60"
-      stroke={`url(#v-${uid})`}></path>
-    <path
-      d="M12,60 C 18,76 30,76 36,60 C 42,44 54,44 60,60 C 66,76 78,76 84,60 C 90,44 102,44 108,60"
-      stroke={`url(#t-${uid})`}
-      mask={`url(#m-${uid})`}></path>
+  <g class="weave" fill="none" stroke-width="9" stroke-linecap="round">
+    <!-- base strands -->
+    <path class="strand v" d={dV} stroke={`url(#v-${uid})`}></path>
+    <path class="strand t" d={dT} stroke={`url(#t-${uid})`} mask={`url(#m-${uid})`}></path>
+    <!-- light flowing through the fibers -->
+    <path class="pulse vp" d={dV}></path>
+    <path class="pulse tp" d={dT} mask={`url(#m-${uid})`}></path>
   </g>
 </svg>
 
 <style>
-  [data-draw] .weave path {
-    stroke-dasharray: 240;
-    --len: 240;
-    animation: weave-draw 1.4s var(--ease-out-expo) forwards;
+  .weave path {
+    fill: none;
   }
-  [data-draw] .weave path:nth-child(2) {
-    animation-delay: 0.18s;
+
+  /* Draw-in: the two fibers weave together from opposite ends. */
+  [data-draw] .strand {
+    stroke-dasharray: 240;
+    animation-duration: 1.7s;
+    animation-timing-function: var(--ease-out-expo);
+    animation-fill-mode: forwards;
+  }
+  [data-draw] .strand.v {
+    stroke-dashoffset: 240;
+    animation-name: draw-in;
+  }
+  [data-draw] .strand.t {
+    stroke-dashoffset: -240;
+    animation-name: draw-in;
+  }
+  @keyframes draw-in {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* A bright segment travels each strand — work flowing through the fibers.
+     Idle by default; runs forever on the hero mark, and on hover elsewhere. */
+  .pulse {
+    stroke: currentColor;
+    stroke-dasharray: 20 220;
+    stroke-dashoffset: 240;
+    filter: drop-shadow(0 0 5px currentColor);
+    opacity: 0;
+  }
+  .pulse.vp {
+    color: var(--violet-bright);
+  }
+  .pulse.tp {
+    color: var(--teal-bright);
+  }
+  [data-draw] .pulse,
+  .logo:hover .pulse {
+    opacity: 1;
+    animation: flow 2.4s linear infinite;
+  }
+  [data-draw] .pulse.tp,
+  .logo:hover .pulse.tp {
+    animation-direction: reverse;
+    animation-delay: -1.2s; /* offset so the two pulses cross at the weave */
+  }
+  /* On the hero mark, hold both pulses until the draw-in finishes, then start
+     them at opposite ends so they sweep toward each other and cross. */
+  [data-draw] .pulse.vp {
+    animation-delay: 1.7s;
+  }
+  [data-draw] .pulse.tp {
+    animation-delay: 1.7s;
+  }
+  @keyframes flow {
+    from {
+      stroke-dashoffset: 240;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse {
+      animation: none;
+      opacity: 0;
+    }
+    [data-draw] .strand {
+      animation: none;
+      stroke-dashoffset: 0;
+    }
   }
 </style>
