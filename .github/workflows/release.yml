@@ -47,7 +47,11 @@ jobs:
       - name: Publish to npm (with provenance)
         run: pnpm -r --filter "./packages/*" publish --access public --no-git-checks --provenance
 
-      - name: Create GitHub release
-        run: gh release create "$GITHUB_REF_NAME" --title "effract $GITHUB_REF_NAME" --generate-notes
+      - name: Create GitHub release (notes from CHANGELOG)
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]"{f=1;next} f&&/^## \[/{f=0} f' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "See [CHANGELOG.md](./CHANGELOG.md)." > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "effract $GITHUB_REF_NAME" --notes-file notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
