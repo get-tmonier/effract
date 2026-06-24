@@ -72,6 +72,22 @@ const { hero } = content;
       <p class="text-xs text-muted">{hero.installNote}</p>
     </div>
   </div>
+
+  <a href="#thesis" class="hero-scroll" aria-label="Scroll to the thesis">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 9l6 6 6-6"></path>
+    </svg>
+  </a>
 </section>
 
 <style>
@@ -96,6 +112,42 @@ const { hero } = content;
     background: radial-gradient(closest-side, rgba(124, 92, 255, 0.16), transparent 70%);
     filter: blur(40px);
     pointer-events: none;
+  }
+
+  /* a discreet "there's more below" cue for the full-screen hero */
+  .hero-scroll {
+    position: absolute;
+    bottom: 1.4rem;
+    left: 50%;
+    translate: -50% 0;
+    color: var(--muted);
+    opacity: 0;
+    animation:
+      hero-scroll-in 0.6s ease 0.9s forwards,
+      hero-bob 2.2s ease-in-out 1.5s infinite;
+    transition: color 0.2s;
+  }
+  .hero-scroll:hover {
+    color: var(--ink-dim);
+  }
+  @keyframes hero-scroll-in {
+    to {
+      opacity: 0.75;
+    }
+  }
+  @keyframes hero-bob {
+    0%,
+    100% {
+      translate: -50% 0;
+    }
+    50% {
+      translate: -50% 6px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-scroll {
+      animation: hero-scroll-in 0.4s ease 0.6s forwards;
+    }
   }
 </style>
 
