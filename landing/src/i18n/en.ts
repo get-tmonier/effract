@@ -17,7 +17,7 @@ const en: SiteContent = {
     titleLead: 'Write React components as',
     titleGradient: 'Effect programs.',
     subtitle:
-      'The same component runs in a SPA, on a server, in a Web Worker, or as a React Server Component. "Server vs client" stops being an architectural fork and becomes an Effect runtime detail.',
+      'The same component runs in a SPA, on a server, in a Web Worker, or as an RSC — server vs client becomes a runtime detail.',
     ctaPrimary: 'Read the docs',
     ctaSecondary: 'Star on GitHub',
     installNote: 'MIT · React 19.2+ · Effect v4',
@@ -28,6 +28,10 @@ const en: SiteContent = {
     aria: 'React fibers and Effect fibers braided into one component',
     caption: 'Two fiber systems, braided in one render pass —',
     captionEnd: 'speaks both languages at once.',
+  },
+  callsite: {
+    label: 'The call site',
+    caption: 'A service and a real React hook in one body — placed and checked at compile time.',
   },
   thesis: {
     label: 'The thesis',

@@ -17,7 +17,7 @@ const fr: SiteContent = {
     titleLead: 'Vos composants React, écrits comme des',
     titleGradient: 'programmes Effect.',
     subtitle:
-      'Le même composant tourne en SPA, sur un serveur, dans un Web Worker, ou comme React Server Component. « Serveur ou client » n’est plus une bifurcation d’architecture, mais un simple détail de runtime Effect.',
+      'Le même composant tourne en SPA, sur un serveur, dans un Web Worker ou comme RSC — serveur ou client devient un simple détail de runtime.',
     ctaPrimary: 'Lire la doc',
     ctaSecondary: 'Star sur GitHub',
     installNote: 'MIT · React 19.2+ · Effect v4',
@@ -28,6 +28,10 @@ const fr: SiteContent = {
     aria: 'Des fibres React et des fibres Effect tressées en un seul composant',
     caption: 'Deux systèmes de fibres, tressés en une seule passe de rendu —',
     captionEnd: 'parle les deux langages à la fois.',
+  },
+  callsite: {
+    label: 'Le call site',
+    caption: 'Un service et un vrai hook React dans un seul corps — placé et vérifié à la compilation.',
   },
   thesis: {
     label: 'La thèse',

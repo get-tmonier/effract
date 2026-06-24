@@ -40,6 +40,10 @@ export interface SiteContent {
     readonly caption: string;
     readonly captionEnd: string;
   };
+  readonly callsite: {
+    readonly label: string;
+    readonly caption: string;
+  };
   readonly thesis: {
     readonly label: string;
     readonly title: string;
