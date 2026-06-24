@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "react", "unicorn"],
+  "env": { "browser": true, "node": true, "es2024": true },
+  "rules": {
+    "no-console": "error",
+    "eqeqeq": "error",
+    "no-unused-vars": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": "error",
+    "import/no-duplicates": "error",
+    "unicorn/prefer-node-protocol": "error"
+  },
+  "overrides": [
+    {
+      "files": ["apps/**", "**/*.test.ts", "**/*.test.tsx", "**/vite.config.ts", "**/*.config.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}

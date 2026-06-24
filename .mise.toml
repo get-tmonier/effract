@@ -1,0 +1,9 @@
+[tools]
+node = "26.1.0"
+pnpm = "11.1.2"
+just = "1.49.0"
+lefthook = "2.1.6"
+
+[env]
+# Keep React out of "development" double-invoke noise in CI render probes.
+NODE_NO_WARNINGS = "1"

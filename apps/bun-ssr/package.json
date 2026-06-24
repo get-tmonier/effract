@@ -1,0 +1,26 @@
+{
+  "name": "@effract/example-bun-ssr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "styles": "tailwindcss -i ./src/styles.css -o ./public/app.css --minify",
+    "dev": "bun run styles && bun --hot src/server.tsx",
+    "start": "bun run styles && bun src/server.tsx",
+    "build": "bun run styles && bun build ./src/client.tsx --target=browser --outdir=dist"
+  },
+  "dependencies": {
+    "@effract/shared": "workspace:*",
+    "@tmonier/effract": "workspace:*",
+    "effect": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tailwindcss": "catalog:"
+  }
+}

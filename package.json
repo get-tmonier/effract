@@ -1,0 +1,31 @@
+{
+  "name": "effract-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "oxlint packages apps examples",
+    "format": "oxfmt --check packages apps examples",
+    "format:fix": "oxfmt packages apps examples",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "boundaries": "depcruise packages",
+    "knip": "knip",
+    "test": "pnpm -r --if-present --filter \"./packages/*\" run test",
+    "build": "pnpm -r --filter \"./packages/*\" build",
+    "ncu": "ncu --deep"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "dependency-cruiser": "catalog:",
+    "knip": "catalog:",
+    "npm-check-updates": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

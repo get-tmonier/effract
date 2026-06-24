@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+
+/* The shared RECs live in another workspace package; tell Tailwind to scan them
+   so their utility classes make it into the build. */
+@source '../../shared/src';
+
+body {
+  background:
+    radial-gradient(120% 120% at 50% -10%, #161d2e 0%, #020617 55%) fixed,
+    #020617;
+}

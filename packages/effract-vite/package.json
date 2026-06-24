@@ -1,0 +1,51 @@
+{
+  "name": "@tmonier/effract-vite",
+  "version": "0.1.0",
+  "description": "Vite plugin for effract: React Fast Refresh plus sensible Effect/React de-duplication, in one import.",
+  "keywords": [
+    "effect",
+    "plugin",
+    "react",
+    "vite"
+  ],
+  "homepage": "https://github.com/get-tmonier/effract#readme",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/get-tmonier/effract.git",
+    "directory": "packages/effract-vite"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.mts",
+        "import": "./dist/index.mjs"
+      }
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "catalog:",
+    "tsdown": "catalog:",
+    "vite": "catalog:"
+  },
+  "peerDependencies": {
+    "@vitejs/plugin-react": "catalog:",
+    "vite": "catalog:"
+  }
+}

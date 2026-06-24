@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: true
+  commands:
+    oxlint:
+      glob: "{packages,apps}/**/*.{ts,tsx}"
+      run: pnpm exec oxlint {staged_files}
+    oxfmt:
+      glob: "{packages,apps}/**/*.{ts,tsx}"
+      run: pnpm exec oxfmt --check {staged_files}
+    typecheck:
+      run: pnpm run typecheck
+      skip:
+        files_without: "*.ts"

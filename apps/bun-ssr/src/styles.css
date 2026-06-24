@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+
+/* Scan the shared RECs and this app so their utility classes are generated. */
+@source '../../shared/src';
+@source './src';
+
+body {
+  background:
+    radial-gradient(120% 120% at 50% -10%, #161d2e 0%, #020617 55%) fixed,
+    #020617;
+}

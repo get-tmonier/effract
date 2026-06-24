@@ -1,0 +1,16 @@
+{
+  "name": "@effract/recipes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-contained, copy-pasteable call-site recipes for effract — one pattern per file.",
+  "type": "module",
+  "dependencies": {
+    "@tmonier/effract": "workspace:*",
+    "@tmonier/effract-rsc": "workspace:*",
+    "effect": "catalog:",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:"
+  }
+}

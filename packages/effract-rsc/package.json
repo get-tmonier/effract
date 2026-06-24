@@ -1,0 +1,83 @@
+{
+  "name": "@tmonier/effract-rsc",
+  "version": "0.1.0",
+  "description": "Drive effract React Effect Components with an Effect runtime and stream them as React Server Components (Flight) — from a server, or from a Web Worker.",
+  "keywords": [
+    "effect",
+    "flight",
+    "react",
+    "react-server-components",
+    "rsc",
+    "ssr",
+    "streaming"
+  ],
+  "homepage": "https://github.com/get-tmonier/effract#readme",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/get-tmonier/effract.git",
+    "directory": "packages/effract-rsc"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "imports": {
+    "#domain/*": "./src/domain/*",
+    "#application/*": "./src/application/*",
+    "#infrastructure/*": "./src/infrastructure/*"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./worker": {
+      "types": "./src/worker.ts",
+      "default": "./src/worker.ts"
+    },
+    "./driver": {
+      "types": "./src/driver.ts",
+      "default": "./src/driver.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.mts",
+        "import": "./dist/index.mjs"
+      },
+      "./worker": {
+        "types": "./dist/worker.d.mts",
+        "import": "./dist/worker.mjs"
+      },
+      "./driver": {
+        "types": "./dist/driver.d.mts",
+        "import": "./dist/driver.mjs"
+      }
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@tmonier/effract": "workspace:*",
+    "@types/react": "catalog:",
+    "effect": "catalog:",
+    "react": "catalog:",
+    "react-server-dom-webpack": "catalog:",
+    "tsdown": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@tmonier/effract": "workspace:*",
+    "effect": "catalog:",
+    "react": "catalog:",
+    "react-server-dom-webpack": "catalog:"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@effract/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./services": "./src/services.ts",
+    "./bodies": "./src/bodies.tsx",
+    "./recs": "./src/recs.tsx",
+    "./server": "./src/server.tsx"
+  },
+  "dependencies": {
+    "@tmonier/effract": "workspace:*",
+    "@tmonier/effract-rsc": "workspace:*",
+    "effect": "catalog:",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:"
+  }
+}

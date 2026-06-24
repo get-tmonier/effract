@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+
+@source '../../shared/src';
+@source './';
+
+body {
+  background:
+    radial-gradient(120% 120% at 50% -10%, #161d2e 0%, #020617 55%) fixed,
+    #020617;
+}

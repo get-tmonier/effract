@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.next/
+.output/
+.vinxi/
+.tanstack/
+*.tsbuildinfo
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# env
+.env
+.env.local
+.env.*.local
+
+# scratch
+.scratch/
+coverage/
+
+# generated
+next-env.d.ts
+**/routeTree.gen.ts
+apps/bun-ssr/public/app.css

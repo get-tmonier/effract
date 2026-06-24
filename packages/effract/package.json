@@ -1,0 +1,67 @@
+{
+  "name": "@tmonier/effract",
+  "version": "0.1.0",
+  "description": "Write React components as Effect programs. The same component runs in a SPA, on the server, in a Web Worker, or as a React Server Component — server vs client becomes an Effect runtime detail.",
+  "keywords": [
+    "effect",
+    "fiber",
+    "react",
+    "react-server-components",
+    "reactivity",
+    "rsc",
+    "signals",
+    "ssr"
+  ],
+  "homepage": "https://github.com/get-tmonier/effract#readme",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/get-tmonier/effract.git",
+    "directory": "packages/effract"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "imports": {
+    "#domain/*": "./src/domain/*",
+    "#application/*": "./src/application/*",
+    "#infrastructure/*": "./src/infrastructure/*"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.mts",
+        "import": "./dist/index.mjs"
+      }
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "effect": "catalog:",
+    "happy-dom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tsdown": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": "catalog:",
+    "react": "catalog:"
+  }
+}
