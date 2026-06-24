@@ -73,6 +73,7 @@ const strands = Array.from({ length: N }, (_, i) => {
             class:list={['fw-base', s.react ? 'react' : 'effect']}
             d={s.d}
             stroke={s.react ? 'var(--react)' : 'var(--effect)'}
+            style={`--len:${s.length};--dur:${s.dur}s`}
           />
         ))
       }
@@ -96,6 +97,14 @@ const strands = Array.from({ length: N }, (_, i) => {
     inset: 0;
     overflow: hidden;
     pointer-events: none;
+    /* ease the whole field in so nothing pops on load */
+    opacity: 0;
+    animation: fw-reveal 0.9s ease-out forwards;
+  }
+  @keyframes fw-reveal {
+    to {
+      opacity: 1;
+    }
   }
   .fw-svg {
     width: 100%;
@@ -107,6 +116,17 @@ const strands = Array.from({ length: N }, (_, i) => {
     stroke-width: 2.5;
     opacity: 0.42;
     filter: drop-shadow(0 0 3px currentColor);
+    /* The comet draws the line: the base is revealed in lockstep with the pulse
+       (same length, same duration, same linear timing), so the fiber appears
+       exactly behind the leading bright dash on its first pass. */
+    stroke-dasharray: var(--len);
+    stroke-dashoffset: var(--len);
+    animation: fw-draw var(--dur) linear forwards;
+  }
+  @keyframes fw-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
   }
   .fw-base.react,
   .fw-comet.react {
@@ -125,9 +145,6 @@ const strands = Array.from({ length: N }, (_, i) => {
     filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 15px currentColor);
     animation: fw-run var(--dur) linear infinite;
   }
-  .fw-comet.effect {
-    animation-direction: reverse;
-  }
   @keyframes fw-run {
     from {
       stroke-dashoffset: var(--len);
@@ -138,12 +155,18 @@ const strands = Array.from({ length: N }, (_, i) => {
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .fw-bg {
+      animation: none;
+      opacity: 1;
+    }
+    .fw-base {
+      animation: none;
+      stroke-dashoffset: 0;
+      opacity: 0.45;
+    }
     .fw-comet {
       animation: none;
       opacity: 0;
-    }
-    .fw-base {
-      opacity: 0.45;
     }
   }
 </style>
