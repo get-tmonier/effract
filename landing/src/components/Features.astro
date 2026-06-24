@@ -1,4 +1,5 @@
 ---
+import { emphasize } from '#lib/text';
 import type { SiteContent } from '#i18n/types';
 
 interface Props {
@@ -24,7 +25,7 @@ const { features } = Astro.props.content;
             {String(i + 1).padStart(2, '0')}
           </div>
           <h3 class="font-semibold tracking-tight">{item.title}</h3>
-          <p class="mt-2 text-sm leading-relaxed text-ink-dim">{item.desc}</p>
+          <p class="mt-2 text-sm leading-relaxed text-ink-dim" set:html={emphasize(item.desc)} />
         </article>
       ))
     }

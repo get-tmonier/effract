@@ -19,6 +19,10 @@
   --teal: #29d3c2;
   --teal-bright: #5ce6d8;
 
+  /* brand identity: React (its iconic cyan) and Effect (its purple) */
+  --react: #61dafb;
+  --effect: #a78bfa;
+
   /* signals */
   --amber: #ffbd2e;
   --rose: #ff6b81;

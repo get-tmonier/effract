@@ -2,6 +2,7 @@
 import FiberWeave from '#components/FiberWeave.astro';
 import Logo from '#components/Logo.astro';
 import { SITE, localePath } from '#lib/site';
+import { colorizeTitle, emphasize } from '#lib/text';
 import type { SiteContent } from '#i18n/types';
 
 interface Props {
@@ -29,14 +30,15 @@ const { hero } = content;
       </span>
     </div>
 
-    <h1 class="text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-      {hero.titleLead}{' '}
-      <span class="fiber-text-shimmer">{hero.titleGradient}</span>
-    </h1>
+    <h1
+      class="text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl"
+      set:html={colorizeTitle(`${hero.titleLead} ${hero.titleGradient}`)}
+    />
 
-    <p class="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-balance text-ink-dim">
-      {hero.subtitle}
-    </p>
+    <p
+      class="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-balance text-ink-dim"
+      set:html={emphasize(hero.subtitle)}
+    />
 
     <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
       <a

@@ -4,7 +4,7 @@ const fr: SiteContent = {
   meta: {
     title: 'effract — écrivez vos composants React comme des programmes Effect',
     description:
-      'effract est un framework React natif Effect. Écrivez un composant une fois ; le même composant tourne en SPA, sur un serveur, dans un Web Worker, ou comme React Server Component. « Serveur ou client » devient un détail de runtime Effect.',
+      'Écrivez vos composants React comme des programmes Effect. Un composant tourne en SPA, sur un serveur, dans un Web Worker ou comme RSC — serveur ou client n’est qu’un détail de runtime.',
   },
   nav: {
     thesis: 'Thèse',
@@ -17,7 +17,7 @@ const fr: SiteContent = {
     titleLead: 'Vos composants React, écrits comme des',
     titleGradient: 'programmes Effect.',
     subtitle:
-      'Le même composant tourne en SPA, sur un serveur, dans un Web Worker ou comme RSC — serveur ou client devient un simple détail de runtime.',
+      'Le même composant tourne en SPA, sur un serveur, dans un Web Worker ou comme RSC — serveur ou client n’est qu’un [[détail de runtime]].',
     ctaPrimary: 'Lire la doc',
     ctaSecondary: 'Star sur GitHub',
     installNote: 'MIT · React 19.2+ · Effect v4',
@@ -26,56 +26,55 @@ const fr: SiteContent = {
     react: 'Fibres React',
     effect: 'Fibres Effect',
     aria: 'Des fibres React et des fibres Effect tressées en un seul composant',
-    caption: 'Deux systèmes de fibres, tressés en une seule passe de rendu —',
-    captionEnd: 'parle les deux langages à la fois.',
+    caption: 'Deux fibres, tissées en une passe de rendu —',
+    captionEnd: 'parlent les deux.',
   },
   callsite: {
-    caption:
-      'Un service et un vrai hook React dans un seul corps — placé et vérifié à la compilation.',
+    caption: 'Un service et un vrai hook React dans un seul corps — [[vérifié à la compilation]].',
   },
   thesis: {
     label: 'La thèse',
     title: 'Deux fibres, un composant',
-    body: 'React ordonnance son travail sur des fibres ; Effect aussi. Le corps d’un composant est un générateur interprété dans la passe de rendu de React — un seul flux de yield* qui parle les deux langages. Du React 100 % réel, sans réconciliateur remplacé.',
+    body: 'React et Effect ordonnancent tous deux sur des fibres. effract pilote le générateur d’un composant dans la passe de rendu de React — un seul flux de yield* pour les deux. [[Du React 100 % réel, sans réconciliateur remplacé]].',
     rows: [
-      { write: 'yield* Stats', does: 'résout un service depuis le runtime — de façon synchrone' },
-      { write: 'yield* hook(useState(0))', does: 'un vrai hook React, dans un ordre stable' },
-      { write: 'yield* fetchUser', does: 'suspend via React Suspense, reprend sur place' },
+      { write: 'yield* Stats', does: 'un service, résolu de façon synchrone' },
+      { write: 'yield* hook(useState(0))', does: 'un vrai hook React, ordre stable' },
+      { write: 'yield* fetchUser', does: 'suspend, puis reprend sur place' },
       { write: 'une erreur', does: 'remonte à l’error boundary la plus proche' },
     ],
   },
   everywhere: {
     label: 'Un composant, tous les runtimes',
     title: 'Serveur ou client : un simple mount(...)',
-    body: 'Un layer navigateur en fait une SPA. Un layer serveur émet du SSR en flux. Le moteur Flight en fait un RSC. Le composant ne change pas — seul le runtime sous lui change.',
+    body: 'Layer navigateur → SPA. Layer serveur → SSR en flux. Moteur Flight → RSC. Le composant [[ne change jamais]] ; seul le runtime sous lui change.',
     runtimes: [
       { name: 'SPA', desc: 'Vite, dans le navigateur' },
       { name: 'SSR', desc: 'Bun / Node en flux' },
       { name: 'Web Worker', desc: 'hors du thread principal' },
       { name: 'RSC', desc: 'Flight, en flux' },
     ],
-    caption: 'Les mêmes RECs s’affichent dans les quatre — démontré par les apps d’exemple.',
+    caption: 'Les mêmes RECs dans les quatre — démontré par les apps d’exemple.',
   },
   philosophy: {
     label: 'Philosophie',
     title: 'Gardez la couche de rendu ennuyeuse',
-    body: 'Un composant React doit être presque banal : structure et interaction, rien de plus. Le difficile — services, async, flags, retries — vit hors de React, résolu au point de composition et remis à votre JSX en résultat fini et typé.',
+    body: 'Un composant React doit être [[presque banal]] — structure et interaction, rien de plus. Le difficile vit [[hors de React]], résolu au point de composition et remis à votre JSX en résultat typé.',
     points: [
       {
         title: 'Le difficile vit dans Effect',
-        desc: 'Retries, concurrence, cache, sûreté des ressources, tracing — gérés par Effect, hors de l’arbre de rendu, où ils sont testables et réutilisables.',
+        desc: 'Retries, concurrence, cache, tracing — le travail d’Effect, hors de l’arbre de rendu, testable et réutilisable.',
       },
       {
         title: 'La composition async devient triviale',
-        desc: 'Plus d’états de chargement ni de hooks en cascade : tout est résolu avant le rendu, donc le corps se lit de haut en bas.',
+        desc: 'Plus d’états de chargement ni de hooks en cascade. Tout est résolu avant le rendu ; le corps se lit de haut en bas.',
       },
       {
         title: 'La bonne idée des RSC, sans le serveur',
-        desc: 'L’intérêt des RSC était de rapprocher la résolution des dépendances de la racine de composition. effract le garde et lâche le verrou — ça marche dans n’importe quel runtime.',
+        desc: 'Le vrai intérêt des RSC : résoudre les dépendances à la racine de composition. effract le garde, sans le verrou.',
       },
       {
         title: 'Une primitive, pas un zoo',
-        desc: 'Remisez useEffect, une librairie de fetch, le context, un store et les server actions — un seul yield* exprime dépendance, async et état.',
+        desc: 'Remisez useEffect, une lib de fetch, le context, un store, les server actions — un seul yield* couvre les trois.',
       },
     ],
   },
@@ -85,33 +84,33 @@ const fr: SiteContent = {
     items: [
       {
         title: 'Incrémental, pas une réécriture',
-        desc: 'Les composants React ordinaires restent intacts — du JSX <Component /> classique. Sortez un REC seulement là où il faut un service, et placez-le avec {yield* Rec}.',
+        desc: 'Les composants ordinaires [[restent du]] <Component /> JSX. Un REC seulement là où il faut un service.',
       },
       {
         title: 'Du vrai React, de bout en bout',
-        desc: 'Les hooks gardent leur ordre. Suspense, error boundaries, mémoïsation, hydratation et RSC fonctionnent — parce qu’effract rend à travers React, pas à côté.',
+        desc: 'Hooks, Suspense, error boundaries, hydratation, RSC — [[tout fonctionne]]. effract rend à travers React.',
       },
       {
         title: 'Les services, en synchrone',
-        desc: 'Lire un service est une lecture de Context, pas un aller-retour async. Aucun piège Effect.runSync n’atteint votre call site.',
+        desc: 'Lire un service est une [[lecture de Context]], pas un aller-retour async. Aucun Effect.runSync au call site.',
       },
       {
         title: 'Des signaux sans cérémonie',
-        desc: 'observe($ => $(count) * 2) re-rend précisément quand — et seulement quand — un atom lu change. Sans provider, sans boilerplate.',
+        desc: 'observe($ => $(count) * 2) re-rend [[exactement quand]] un atom lu change. Sans provider, sans sélecteurs.',
       },
       {
         title: 'RSC, nativement',
-        desc: 'Le même corps pilote un Server Component async et émet du Flight standard, depuis un serveur ou un Web Worker.',
+        desc: 'Le même corps devient un [[Server Component async]] et émet du Flight standard.',
       },
       {
         title: 'Typé de bout en bout',
-        desc: 'Chaque service dont un composant a besoin et chaque erreur qu’il peut lever sont inférés depuis vos yield — et mount ne compile pas si le runtime ne les fournit pas.',
+        desc: 'Besoins et erreurs sont inférés depuis vos yield — [[mount ne compile pas sans eux]].',
       },
     ],
   },
   cta: {
     title: 'Écrivez-le une fois. Exécutez-le partout où tourne un runtime.',
-    body: 'effract est sous licence MIT et publié sur npm. Commencez par la doc, ou lisez les huit recettes de call site.',
+    body: 'MIT, sur npm. Commencez par la doc, ou les huit recettes de call site.',
     primary: 'Commencer',
     secondary: 'Voir sur GitHub',
   },

@@ -1,10 +1,10 @@
 ---
 /**
- * The thesis as the hero's living backdrop: a field of woven fibers — teal
- * (React) and violet (Effect) — with bright comets of light racing along them in
+ * The thesis as the hero's living backdrop: a field of woven fibers in React's
+ * cyan and Effect's violet, with bright comets of light racing along them in
  * opposite directions and crossing at the weave. It sits *behind* the hero
  * content (dimmed in the centre so text stays readable), so it costs no vertical
- * space. Two glowing tags name the colours.
+ * space. No labels — the coloured "React"/"Effect" in the title name the colours.
  */
 import type { SiteContent } from '#i18n/types';
 
@@ -54,16 +54,6 @@ const strands = Array.from({ length: N }, (_, i) => {
     aria-label={weave.aria}
   >
     <defs>
-      <linearGradient id="fw-teal" x1="0" y1="0" x2={VW} y2="0" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stop-color="var(--teal)"></stop>
-        <stop offset="0.5" stop-color="var(--teal-bright)"></stop>
-        <stop offset="1" stop-color="var(--teal)"></stop>
-      </linearGradient>
-      <linearGradient id="fw-violet" x1="0" y1="0" x2={VW} y2="0" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stop-color="var(--violet)"></stop>
-        <stop offset="0.5" stop-color="var(--violet-bright)"></stop>
-        <stop offset="1" stop-color="var(--violet)"></stop>
-      </linearGradient>
       <!-- gently dim the centre so the headline stays readable; bright toward the edges -->
       <radialGradient id="fw-vig" cx="0.5" cy="0.5" r="0.66">
         <stop offset="0" stop-color="#3c3c3c"></stop>
@@ -82,7 +72,7 @@ const strands = Array.from({ length: N }, (_, i) => {
           <path
             class:list={['fw-base', s.react ? 'react' : 'effect']}
             d={s.d}
-            stroke={s.react ? 'url(#fw-teal)' : 'url(#fw-violet)'}
+            stroke={s.react ? 'var(--react)' : 'var(--effect)'}
           />
         ))
       }
@@ -98,9 +88,6 @@ const strands = Array.from({ length: N }, (_, i) => {
       }
     </g>
   </svg>
-
-  <span class="fw-tag teal">{weave.react}</span>
-  <span class="fw-tag violet">{weave.effect}</span>
 </div>
 
 <style>
@@ -123,11 +110,11 @@ const strands = Array.from({ length: N }, (_, i) => {
   }
   .fw-base.react,
   .fw-comet.react {
-    color: var(--teal-bright);
+    color: var(--react);
   }
   .fw-base.effect,
   .fw-comet.effect {
-    color: var(--violet-bright);
+    color: var(--effect);
   }
 
   .fw-comet {
@@ -147,58 +134,6 @@ const strands = Array.from({ length: N }, (_, i) => {
     }
     to {
       stroke-dashoffset: 0;
-    }
-  }
-
-  /* Glowing tags on the fibers — not a chart legend. */
-  .fw-tag {
-    position: absolute;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.02em;
-    padding: 0.25rem 0.6rem;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-    background: color-mix(in srgb, var(--bg) 70%, transparent);
-    backdrop-filter: blur(4px);
-    color: currentColor;
-    box-shadow: 0 0 16px -4px currentColor;
-    white-space: nowrap;
-  }
-  .fw-tag::before {
-    content: '';
-    display: inline-block;
-    width: 0.45rem;
-    height: 0.45rem;
-    margin-right: 0.4rem;
-    border-radius: 999px;
-    background: currentColor;
-    box-shadow: 0 0 8px currentColor;
-    vertical-align: middle;
-  }
-  .fw-tag.teal {
-    color: var(--teal-bright);
-    bottom: 20%;
-    left: 5%;
-  }
-  .fw-tag.violet {
-    color: var(--violet-bright);
-    bottom: 8%;
-    right: 5%;
-  }
-
-  @media (max-width: 640px) {
-    .fw-tag {
-      font-size: 0.64rem;
-      padding: 0.2rem 0.5rem;
-    }
-    .fw-tag.teal {
-      bottom: 15%;
-      left: 4%;
-    }
-    .fw-tag.violet {
-      bottom: 6%;
-      right: 4%;
     }
   }
 

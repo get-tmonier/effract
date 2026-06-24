@@ -1,4 +1,5 @@
 ---
+import { emphasize } from '#lib/text';
 import type { SiteContent } from '#i18n/types';
 
 interface Props {
@@ -13,7 +14,7 @@ const { philosophy } = Astro.props.content;
     <div class="reveal mx-auto max-w-2xl text-center">
       <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{philosophy.label}</p>
       <h2 class="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{philosophy.title}</h2>
-      <p class="mt-5 leading-relaxed text-ink-dim text-pretty">{philosophy.body}</p>
+      <p class="mt-5 leading-relaxed text-ink-dim text-pretty" set:html={emphasize(philosophy.body)} />
     </div>
 
     <div class="mt-14 grid grid-cols-1 gap-x-10 gap-y-10 md:grid-cols-2">
