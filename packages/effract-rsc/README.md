@@ -1,6 +1,6 @@
 # @tmonier/effract-rsc
 
-Drive [effract](https://github.com/get-tmonier/effract) React Effect Components with an Effect runtime and
+Drive [effract](https://effract.tmonier.com) React Effect Components with an Effect runtime and
 stream them as React Server Components (Flight).
 
 ```tsx
