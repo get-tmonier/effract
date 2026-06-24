@@ -1,7 +1,7 @@
 {
   "name": "@tmonier/effract",
   "version": "0.1.0",
-  "description": "Write React components as Effect programs. The same component runs in a SPA, on the server, in a Web Worker, or as a React Server Component — server vs client becomes an Effect runtime detail.",
+  "description": "React components written as Effect programs. yield* services and React hooks in one render pass; run the same component anywhere.",
   "keywords": [
     "effect",
     "fiber",

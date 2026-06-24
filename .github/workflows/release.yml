@@ -5,17 +5,18 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: read
-  id-token: write
+  contents: write # create the GitHub release
+  id-token: write # npm provenance attestation
 
 jobs:
   publish:
     name: publish to npm
     runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up toolchain
+      - name: Set up toolchain (mise → node, pnpm, just)
         uses: jdx/mise-action@v2
         with:
           experimental: true
@@ -26,11 +27,27 @@ jobs:
       - name: Verify
         run: just verify
 
+      - name: Set package versions from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Releasing $VERSION"
+          for dir in packages/effract packages/effract-rsc packages/effract-vite; do
+            ( cd "$dir" && npm pkg set version="$VERSION" )
+          done
+
       - name: Build packages
         run: just build
 
-      - name: Publish
-        run: pnpm -r --filter "./packages/*" publish --access public --no-git-checks
+      - name: Configure npm auth
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm (with provenance)
+        run: pnpm -r --filter "./packages/*" publish --access public --no-git-checks --provenance
+
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --title "effract $GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

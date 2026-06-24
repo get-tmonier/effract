@@ -66,9 +66,8 @@ bump:
 
 # --- release ---
 
-changeset:
-    @echo "Update CHANGELOG.md and bump catalog/package versions, then: just release <version>"
-
+# Bump every published package to <version>, commit, tag, and push.
+# The tag triggers .github/workflows/release.yml, which publishes to npm.
 release version:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -76,8 +75,14 @@ release version:
         echo "Error: must be on main to release" >&2; exit 1
     fi
     if [ -n "$(git status --porcelain)" ]; then
-        echo "Error: working tree is dirty" >&2; exit 1
+        echo "Error: working tree is dirty — commit or stash first" >&2; exit 1
     fi
+    for dir in packages/effract packages/effract-rsc packages/effract-vite; do
+        (cd "$dir" && npm pkg set version="{{version}}")
+    done
+    npm pkg set version="{{version}}"
+    git add package.json packages/*/package.json
+    git commit -m "chore: release v{{version}}"
     git tag "v{{version}}"
     git push origin main "v{{version}}"
-    echo "Tagged v{{version}} — CI publishes to npm"
+    @echo "Released v{{version}} — CI builds and publishes to npm"
