@@ -22,6 +22,13 @@ const fr: SiteContent = {
     ctaSecondary: 'Star sur GitHub',
     installNote: 'MIT · React 19.2+ · Effect v4',
   },
+  weave: {
+    react: 'Fibres React',
+    effect: 'Fibres Effect',
+    aria: 'Des fibres React et des fibres Effect tressées en un seul composant',
+    caption: 'Deux systèmes de fibres, tressés en une seule passe de rendu —',
+    captionEnd: 'parle les deux langages à la fois.',
+  },
   thesis: {
     label: 'La thèse',
     title: 'Deux fibres, un composant',

@@ -33,6 +33,13 @@ export interface SiteContent {
     readonly ctaSecondary: string;
     readonly installNote: string;
   };
+  readonly weave: {
+    readonly react: string;
+    readonly effect: string;
+    readonly aria: string;
+    readonly caption: string;
+    readonly captionEnd: string;
+  };
   readonly thesis: {
     readonly label: string;
     readonly title: string;

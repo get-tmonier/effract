@@ -1,5 +1,5 @@
 ---
-import CodeWindow from '#components/CodeWindow.astro';
+import FiberWeave from '#components/FiberWeave.astro';
 import Logo from '#components/Logo.astro';
 import { SITE, localePath } from '#lib/site';
 import type { SiteContent } from '#i18n/types';
@@ -10,84 +10,64 @@ interface Props {
 }
 const { content, locale } = Astro.props;
 const { hero } = content;
-
-const heroCode = `// Counter: a React component,
-// written as an Effect program
-const Counter = rec(function* () {
-  const stats = yield* Stats
-  const [n] = yield* hook(useState(0))
-  return <Row n={n} of={stats.total}/>
-})
-
-// DI checked at compile time:
-createRoot(el).render(
-  mount(AppLive, Counter),
-)`;
 ---
 
 <section class="relative overflow-hidden">
   <div class="hero-grid" aria-hidden="true"></div>
   <div class="hero-aurora" aria-hidden="true"></div>
 
-  <div class="mx-auto grid max-w-6xl grid-cols-1 gap-12 px-5 pt-28 pb-20 lg:grid-cols-[1.05fr_minmax(0,1fr)] lg:items-center lg:pt-40 lg:pb-28">
-    <div class="reveal min-w-0">
-      <div class="mb-6 inline-flex items-center gap-2.5">
-        <Logo size={40} draw />
-        <span class="rounded-full border border-line bg-panel/60 px-3 py-1 text-xs font-medium tracking-wide text-ink-dim uppercase">
-          {hero.eyebrow}
-        </span>
-      </div>
+  <div class="reveal mx-auto max-w-4xl px-5 pt-28 pb-20 text-center lg:pt-36 lg:pb-24">
+    <div class="mb-6 inline-flex items-center gap-2.5">
+      <Logo size={40} draw />
+      <span
+        class="rounded-full border border-line bg-panel/60 px-3 py-1 text-xs font-medium tracking-wide text-ink-dim uppercase"
+      >
+        {hero.eyebrow}
+      </span>
+    </div>
 
-      <h1 class="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl lg:text-6xl">
-        {hero.titleLead}{' '}
-        <span class="fiber-text-shimmer">{hero.titleGradient}</span>
-      </h1>
+    <h1 class="text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+      {hero.titleLead}{' '}
+      <span class="fiber-text-shimmer">{hero.titleGradient}</span>
+    </h1>
 
-      <p class="mt-6 max-w-xl text-lg leading-relaxed text-ink-dim text-balance">
-        {hero.subtitle}
-      </p>
+    <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-balance text-ink-dim">
+      {hero.subtitle}
+    </p>
 
-      <div class="mt-9 flex flex-wrap items-center gap-3">
-        <a
-          href={localePath('/docs/', locale)}
-          class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet to-teal px-5 py-3 text-sm font-semibold text-bg shadow-lg shadow-violet/20 transition-transform hover:-translate-y-0.5"
-        >
-          {hero.ctaPrimary}
-          <span class="transition-transform group-hover:translate-x-0.5">→</span>
-        </a>
-        <a
-          href={SITE.github}
-          target="_blank"
-          rel="noopener"
-          class="inline-flex items-center gap-2 rounded-xl border border-line bg-panel/50 px-5 py-3 text-sm font-semibold transition-colors hover:border-line-2 hover:bg-panel"
-        >
-          ★ {hero.ctaSecondary}
-        </a>
-      </div>
+    <!-- the centerpiece: two fibers, woven and alive -->
+    <FiberWeave content={content} class="mx-auto mt-14 max-w-3xl" />
 
+    <div class="mt-12 flex flex-wrap items-center justify-center gap-3">
+      <a
+        href={localePath('/docs/', locale)}
+        class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet to-teal px-5 py-3 text-sm font-semibold text-bg shadow-lg shadow-violet/20 transition-transform hover:-translate-y-0.5"
+      >
+        {hero.ctaPrimary}
+        <span class="transition-transform group-hover:translate-x-0.5">→</span>
+      </a>
+      <a
+        href={SITE.github}
+        target="_blank"
+        rel="noopener"
+        class="inline-flex items-center gap-2 rounded-xl border border-line bg-panel/50 px-5 py-3 text-sm font-semibold transition-colors hover:border-line-2 hover:bg-panel"
+      >
+        ★ {hero.ctaSecondary}
+      </a>
+    </div>
+
+    <div class="mt-6 flex flex-col items-center gap-2">
       <button
         type="button"
-        class="copy-install group mt-6 flex w-full max-w-full items-center gap-3 overflow-x-auto rounded-lg border border-line bg-bg-2/70 px-4 py-2.5 font-mono text-xs whitespace-nowrap transition-colors hover:border-line-2 sm:inline-flex sm:w-auto sm:text-sm"
+        class="copy-install group flex max-w-full items-center gap-3 overflow-x-auto rounded-lg border border-line bg-bg-2/70 px-4 py-2.5 font-mono text-xs whitespace-nowrap transition-colors hover:border-line-2 sm:text-sm"
         data-copy="npm i @tmonier/effract"
         aria-label="Copy install command"
       >
         <span class="text-teal">$</span>
         <span class="text-ink-dim">npm i <span class="text-ink">@tmonier/effract</span></span>
-        <span class="copy-icon ml-auto pl-2 text-muted transition-colors group-hover:text-ink sm:ml-0">⧉</span>
+        <span class="copy-icon pl-2 text-muted transition-colors group-hover:text-ink">⧉</span>
       </button>
-
-      <p class="mt-4 text-xs text-muted">{hero.installNote}</p>
-    </div>
-
-    <div class="reveal min-w-0" style="--reveal-delay: 140ms">
-      <CodeWindow code={heroCode} title="counter.tsx" />
-      <a
-        href="#everywhere"
-        class="mt-3 flex items-center justify-center gap-2 text-xs text-muted transition-colors hover:text-ink-dim"
-      >
-        the same <span class="font-mono text-teal">Counter</span> runs in every runtime below
-        <span aria-hidden="true">↓</span>
-      </a>
+      <p class="text-xs text-muted">{hero.installNote}</p>
     </div>
   </div>
 </section>

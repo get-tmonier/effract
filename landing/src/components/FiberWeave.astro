@@ -1,0 +1,140 @@
+---
+/**
+ * The thesis, alive: two threads of light — teal (React) and violet (Effect) —
+ * slither and weave through each other, forever. A legend names the colours so
+ * the metaphor is unmistakable: two fiber systems, one woven component.
+ */
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+  class?: string;
+}
+const { content, class: className = '' } = Astro.props;
+const { weave } = content;
+
+const VW = 1040;
+const VH = 200;
+const my = VH / 2;
+const period = 260; // one weave period; the band is exactly 4 periods wide
+const amp = 52;
+const k = (Math.PI * 2) / period;
+const step = 5;
+
+// A sine thread drawn one period past each edge, so a translateX of one period
+// loops seamlessly — the snake slithers without ever showing an end.
+const thread = (phase: number): string => {
+  let d = '';
+  for (let x = -period; x <= VW + period; x += step) {
+    const y = my + Math.sin(x * k + phase) * amp;
+    d += `${x === -period ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)} `;
+  }
+  return d.trim();
+};
+const tealPath = thread(0);
+const violetPath = thread(Math.PI); // mirror phase → the two cross and weave
+---
+
+<div class={`fiber-weave ${className}`}>
+  <div class="mb-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+    <span class="inline-flex items-center gap-2 text-ink-dim">
+      <span class="h-2.5 w-2.5 rounded-full" style="background: var(--teal-bright)"></span>
+      {weave.react}
+    </span>
+    <span class="font-mono text-xs text-muted">×</span>
+    <span class="inline-flex items-center gap-2 text-ink-dim">
+      <span class="h-2.5 w-2.5 rounded-full" style="background: var(--violet-bright)"></span>
+      {weave.effect}
+    </span>
+  </div>
+
+  <svg
+    class="fw-svg"
+    viewBox={`0 0 ${VW} ${VH}`}
+    role="img"
+    aria-label={weave.aria}
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <defs>
+      <linearGradient id="fw-teal" x1="0" y1="0" x2={VW} y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="var(--teal)"></stop>
+        <stop offset="0.5" stop-color="var(--teal-bright)"></stop>
+        <stop offset="1" stop-color="var(--teal)"></stop>
+      </linearGradient>
+      <linearGradient id="fw-violet" x1="0" y1="0" x2={VW} y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="var(--violet)"></stop>
+        <stop offset="0.5" stop-color="var(--violet-bright)"></stop>
+        <stop offset="1" stop-color="var(--violet)"></stop>
+      </linearGradient>
+      <linearGradient id="fw-fade" x1="0" y1="0" x2={VW} y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="black"></stop>
+        <stop offset="0.13" stop-color="white"></stop>
+        <stop offset="0.87" stop-color="white"></stop>
+        <stop offset="1" stop-color="black"></stop>
+      </linearGradient>
+      <mask id="fw-edges">
+        <rect width={VW} height={VH} fill="url(#fw-fade)"></rect>
+      </mask>
+    </defs>
+
+    <!-- static parent holds the edge fade; the inner group slithers within it -->
+    <g mask="url(#fw-edges)">
+      <g class="fw-slither" fill="none" stroke-width="4" stroke-linecap="round">
+        <path class="fw-thread teal" d={tealPath} stroke="url(#fw-teal)"></path>
+        <path class="fw-thread violet" d={violetPath} stroke="url(#fw-violet)"></path>
+        <!-- a brighter core rides on top for the neon look -->
+        <path class="fw-core teal" d={tealPath}></path>
+        <path class="fw-core violet" d={violetPath}></path>
+      </g>
+    </g>
+  </svg>
+
+  <p class="mt-5 text-center text-sm text-muted text-pretty">
+    {weave.caption}
+    <span class="font-mono text-teal">yield*</span>
+    {weave.captionEnd}
+  </p>
+</div>
+
+<style>
+  .fw-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .fw-thread {
+    filter: drop-shadow(0 0 8px currentColor);
+    opacity: 0.85;
+  }
+  .fw-thread.teal,
+  .fw-core.teal {
+    color: var(--teal-bright);
+  }
+  .fw-thread.violet,
+  .fw-core.violet {
+    color: var(--violet-bright);
+  }
+  .fw-core {
+    fill: none;
+    stroke: color-mix(in srgb, currentColor 55%, white);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+
+  /* The slither: translate exactly one period for a seamless loop. */
+  .fw-slither {
+    animation: fw-slither 9s linear infinite;
+    will-change: transform;
+  }
+  @keyframes fw-slither {
+    to {
+      transform: translateX(-260px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fw-slither {
+      animation: none;
+    }
+  }
+</style>

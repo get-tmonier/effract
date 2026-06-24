@@ -22,6 +22,13 @@ const en: SiteContent = {
     ctaSecondary: 'Star on GitHub',
     installNote: 'MIT · React 19.2+ · Effect v4',
   },
+  weave: {
+    react: 'React fibers',
+    effect: 'Effect fibers',
+    aria: 'React fibers and Effect fibers braided into one component',
+    caption: 'Two fiber systems, braided in one render pass —',
+    captionEnd: 'speaks both languages at once.',
+  },
   thesis: {
     label: 'The thesis',
     title: 'Two fibers, one component',
