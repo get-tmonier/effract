@@ -82,7 +82,8 @@ release version:
     done
     npm pkg set version="{{version}}"
     git add package.json packages/*/package.json
-    git commit -m "chore: release v{{version}}"
+    # Only commit when the version actually changed (the first release may already match).
+    git diff --cached --quiet || git commit -m "chore: release v{{version}}"
     git tag "v{{version}}"
     git push origin main "v{{version}}"
     @echo "Released v{{version}} — CI builds and publishes to npm"
