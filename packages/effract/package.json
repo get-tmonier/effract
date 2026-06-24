@@ -61,7 +61,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "effect": "catalog:",
-    "react": "catalog:"
+    "effect": ">=4.0.0-beta.88 <5.0.0",
+    "react": "^19.0.0"
   }
 }

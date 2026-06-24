@@ -20,7 +20,7 @@ const fr: SiteContent = {
       'Le même composant tourne en SPA, sur un serveur, dans un Web Worker ou comme RSC — serveur ou client n’est qu’un [[détail de runtime]].',
     ctaPrimary: 'Lire la doc',
     ctaSecondary: 'Star sur GitHub',
-    installNote: 'MIT · React 19.2+ · Effect v4',
+    installNote: 'MIT · React 19+ · Effect v4 · ~5 Ko',
   },
   weave: {
     react: 'Fibres React',
@@ -101,6 +101,10 @@ const fr: SiteContent = {
       {
         title: 'RSC, nativement',
         desc: 'Le même corps devient un [[Server Component async]] et émet du Flight standard.',
+      },
+      {
+        title: 'Léger, et jamais en double',
+        desc: 'Le cœur fait ~5 Ko gzip. React et Effect restent des peers (la copie de votre app) — [[jamais embarqués ni livrés deux fois]], même entre versions mineures.',
       },
       {
         title: 'Typé de bout en bout',

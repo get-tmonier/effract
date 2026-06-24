@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+- Widen peer ranges so a host's slightly different version is reused instead of duplicated: `react` is now
+  `^19.0.0` (React 19+) and `effect` `>=4.0.0-beta.88 <5.0.0`. React and Effect remain externalized peers —
+  never bundled — so they are never shipped twice in your app.
+
 ## [0.2.0] — 2026-06-24
 
 The component model, redesigned around compile-time dependency safety — plus the documentation site.

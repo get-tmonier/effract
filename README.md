@@ -14,8 +14,8 @@
 
 <p align="center">
   <a href="https://effract.tmonier.com"><img alt="website" src="https://img.shields.io/badge/website-effract.tmonier.com-7c5cff" /></a>
-  <a href="#install"><img alt="status" src="https://img.shields.io/badge/status-beta-7c5cff" /></a>
-  <img alt="React" src="https://img.shields.io/badge/React-19.2-29d3c2" />
+  <a href="https://bundlephobia.com/package/@tmonier/effract"><img alt="minzipped size" src="https://img.shields.io/bundlephobia/minzip/@tmonier/effract?label=core%20gzip&color=29d3c2" /></a>
+  <img alt="React" src="https://img.shields.io/badge/React-19%2B-29d3c2" />
   <img alt="Effect" src="https://img.shields.io/badge/Effect-v4-7c5cff" />
   <img alt="license" src="https://img.shields.io/badge/license-MIT-29d3c2" />
 </p>
@@ -74,7 +74,7 @@ one is a type error that names it.
 npm i @tmonier/effract        # add @tmonier/effract-rsc for the React Server Components renderer
 ```
 
-Requires **React 19.2+** and **Effect v4**.
+Requires **React 19+** and **Effect v4** — both as peer dependencies (see [Bundle size](#bundle-size)).
 
 ```tsx
 import { mount, rec, hook } from '@tmonier/effract';
@@ -97,6 +97,25 @@ createRoot(document.getElementById('root')!).render(mount(AppLive, App));
 ```
 
 Full guide and docs → **[effract.tmonier.com](https://effract.tmonier.com)**.
+
+## Bundle size
+
+effract is tiny, and it never doubles your dependencies.
+
+| Package | Your bundle gains (min+gzip) |
+| --- | --- |
+| `@tmonier/effract` (core) | **~4.7 KB** |
+| `@tmonier/effract-rsc` | ~1.5 KB (server only) |
+| `@tmonier/effract-vite` | 0 (build-time plugin) |
+
+That's effract's own code only. **React and Effect are never bundled** — they're `peerDependencies`, imported
+externally and resolved to **your app's single copy**. Three things keep it that way:
+
+- **Empty `dependencies`.** The packages ship no runtime deps; React/Effect are `import`ed, never inlined.
+- **Wide peer ranges** (`react: ^19.0.0`, `effect: >=4.0.0-beta.88 <5.0.0`) so a slightly different version
+  still satisfies the peer — no second copy gets installed.
+- **De-duplication in the Vite plugin** (`@tmonier/effract-vite`) forces a single `react`, `react-dom`, and
+  `effect` even if a transitive dependency pulls another, so you never ship React or Effect twice.
 
 ## Reactivity
 
