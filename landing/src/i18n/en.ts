@@ -30,7 +30,6 @@ const en: SiteContent = {
     captionEnd: 'speaks both languages at once.',
   },
   callsite: {
-    label: 'The call site',
     caption: 'A service and a real React hook in one body — placed and checked at compile time.',
   },
   thesis: {

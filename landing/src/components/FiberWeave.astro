@@ -38,8 +38,8 @@ const strands = Array.from({ length: N }, (_, i) => {
     d: d.trim(),
     react: i % 2 === 0,
     length,
-    gap: length - 46,
-    dur: (3.4 + i * 0.45).toFixed(2),
+    gap: length - 64,
+    dur: (3.0 + i * 0.4).toFixed(2),
   };
 });
 ---
@@ -64,11 +64,11 @@ const strands = Array.from({ length: N }, (_, i) => {
         <stop offset="0.5" stop-color="var(--violet-bright)"></stop>
         <stop offset="1" stop-color="var(--violet)"></stop>
       </linearGradient>
-      <!-- dim the centre so the headline stays readable; bright toward the edges -->
-      <radialGradient id="fw-vig" cx="0.5" cy="0.5" r="0.62">
-        <stop offset="0" stop-color="#222"></stop>
-        <stop offset="0.5" stop-color="#5a5a5a"></stop>
-        <stop offset="0.95" stop-color="#fff"></stop>
+      <!-- gently dim the centre so the headline stays readable; bright toward the edges -->
+      <radialGradient id="fw-vig" cx="0.5" cy="0.5" r="0.66">
+        <stop offset="0" stop-color="#3c3c3c"></stop>
+        <stop offset="0.5" stop-color="#838383"></stop>
+        <stop offset="0.9" stop-color="#fff"></stop>
       </radialGradient>
       <mask id="fw-mask">
         <rect width={VW} height={VH} fill="url(#fw-vig)"></rect>
@@ -118,7 +118,7 @@ const strands = Array.from({ length: N }, (_, i) => {
 
   .fw-base {
     stroke-width: 2.5;
-    opacity: 0.32;
+    opacity: 0.42;
     filter: drop-shadow(0 0 3px currentColor);
   }
   .fw-base.react,
@@ -132,10 +132,10 @@ const strands = Array.from({ length: N }, (_, i) => {
 
   .fw-comet {
     stroke: currentColor;
-    stroke-width: 3;
-    stroke-dasharray: 46 var(--gap);
+    stroke-width: 3.6;
+    stroke-dasharray: 64 var(--gap);
     stroke-dashoffset: var(--len);
-    filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 14px currentColor);
+    filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 15px currentColor);
     animation: fw-run var(--dur) linear infinite;
   }
   .fw-comet.effect {
@@ -178,25 +178,26 @@ const strands = Array.from({ length: N }, (_, i) => {
   }
   .fw-tag.teal {
     color: var(--teal-bright);
-    top: 16%;
-    left: 6%;
+    bottom: 20%;
+    left: 5%;
   }
   .fw-tag.violet {
     color: var(--violet-bright);
-    bottom: 16%;
-    right: 6%;
+    bottom: 8%;
+    right: 5%;
   }
 
   @media (max-width: 640px) {
     .fw-tag {
-      font-size: 0.66rem;
+      font-size: 0.64rem;
+      padding: 0.2rem 0.5rem;
     }
     .fw-tag.teal {
-      top: 9%;
+      bottom: 15%;
       left: 4%;
     }
     .fw-tag.violet {
-      bottom: 9%;
+      bottom: 6%;
       right: 4%;
     }
   }

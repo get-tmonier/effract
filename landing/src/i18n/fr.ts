@@ -30,8 +30,8 @@ const fr: SiteContent = {
     captionEnd: 'parle les deux langages à la fois.',
   },
   callsite: {
-    label: 'Le call site',
-    caption: 'Un service et un vrai hook React dans un seul corps — placé et vérifié à la compilation.',
+    caption:
+      'Un service et un vrai hook React dans un seul corps — placé et vérifié à la compilation.',
   },
   thesis: {
     label: 'La thèse',

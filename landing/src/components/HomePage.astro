@@ -1,5 +1,4 @@
 ---
-import CallSite from '#components/CallSite.astro';
 import Cta from '#components/Cta.astro';
 import Everywhere from '#components/Everywhere.astro';
 import Features from '#components/Features.astro';
@@ -22,7 +21,6 @@ const { content, locale } = Astro.props;
   <Nav content={content} locale={locale} />
   <main>
     <Hero content={content} locale={locale} />
-    <CallSite content={content} />
     <Thesis content={content} />
     <Everywhere content={content} />
     <Philosophy content={content} />
