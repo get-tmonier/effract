@@ -1,31 +1,55 @@
 /**
- * The shared React Effect Components. Every example renders these exact
- * components — in a SPA, in streaming SSR, in TanStack Start, and (via their
- * bodies) as React Server Components. Nothing here knows where it runs.
+ * The shared components every example renders — in a SPA, in streaming SSR, in
+ * TanStack Start, and (via their bodies) as React Server Components.
  *
- * Read the call sites: a service is `yield* Stats`; a React hook is
- * `yield* hook(useState(0))`; async data is `yield* greeter.greet(...)`; a
- * reactive value is `yield* hook(observe(($) => $(store.todos)))`. One uniform
- * stream of `yield*`, two runtimes underneath.
+ * Two kinds of component live here, and that distinction is the whole point:
+ *
+ *   • **RECs** — made with `rec(...)`. They read the runtime (a service, a
+ *     hook bridged through Effect) and are placed by *yielding* them:
+ *     `{yield* Counter}`. You reach for a REC only when a component needs Effect.
+ *
+ *   • **Plain React components** — like `Footer` below. They read nothing from
+ *     the runtime, so they stay ordinary React and are written `<Footer />`.
+ *
+ * effract is incremental: you don't rewrite your app. Keep every presentational
+ * component exactly as it is; turn a component into a REC only when it actually
+ * needs a service. The two compose freely in the same tree.
  */
-import { Suspense, useState } from 'react';
-import { component, hook, observe } from '@tmonier/effract';
+import { Suspense, useState, type ReactNode } from 'react';
+import { rec, hook, observe } from '@tmonier/effract';
 import { statsBadge } from './bodies.tsx';
 import { Config, Greeter, Stats, Store } from './services.ts';
 
 const card = 'rounded-xl border border-slate-800 bg-slate-900/60 p-4';
 
 /**
+ * A *plain* React component — no services, no effract, no `yield*`. It is
+ * written and used exactly like any React component (`<Footer />`). It sits in
+ * the same tree as the RECs to make the point: only runtime-touching components
+ * change; everything else is normal React.
+ */
+function Footer(): ReactNode {
+  return (
+    <footer className="mt-12 border-t border-slate-800 pt-6 text-center text-sm text-slate-500">
+      built with <span className="text-slate-300">effract</span> · by{' '}
+      <a href="https://tmonier.com" className="text-violet-400 hover:text-violet-300">
+        tmonier
+      </a>
+    </footer>
+  );
+}
+
+/**
  * The service-only badge (its body lives in `./bodies.tsx`, so the same body
  * also renders as a React Server Component) as a client component.
  */
-export const StatsBadge = component(statsBadge);
+export const StatsBadge = rec(statsBadge);
 
 /**
  * The headline: a genuine `useState` hook and an Effect service, interleaved in
  * one render pass. Click it — the hook holds state, the service re-resolves.
  */
-export const Counter = component(function* () {
+export const Counter = rec(function* () {
   const stats = yield* Stats;
   const [n, setN] = yield* hook(useState(0));
   return (
@@ -44,7 +68,7 @@ export const Counter = component(function* () {
  * Wired to a *stateful* service. `observe` subscribes to the store's reactive
  * `likes` cell; the button calls a real service method that mutates it.
  */
-export const Likes = component(function* () {
+export const Likes = rec(function* () {
   const store = yield* Store;
   const likes = yield* hook(observe(($) => $(store.likes)));
   return (
@@ -63,7 +87,7 @@ export const Likes = component(function* () {
  * The fullest call site: a stateful service (`Store`), a precise reactive read
  * (`observe`), and a local React hook (`useState` for the draft) — together.
  */
-export const Todos = component(function* () {
+export const Todos = rec(function* () {
   const store = yield* Store;
   const todos = yield* hook(observe(($) => $(store.todos)));
   const [draft, setDraft] = yield* hook(useState(''));
@@ -119,7 +143,7 @@ export const Todos = component(function* () {
 });
 
 /** An async service read — it suspends through React Suspense, then resolves. */
-export const Greeting = component(function* () {
+export const Greeting = rec(function* () {
   const greeter = yield* Greeter;
   const message = yield* greeter.greet('world');
   return (
@@ -128,7 +152,7 @@ export const Greeting = component(function* () {
 });
 
 /** Composes the shared RECs into one page. This is what every example mounts. */
-export const Dashboard = component(function* () {
+export const Dashboard = rec(function* () {
   const config = yield* Config;
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16 text-slate-100">
@@ -136,13 +160,14 @@ export const Dashboard = component(function* () {
         <h1 className="bg-gradient-to-r from-violet-500 to-teal-400 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
           {config.appName}
         </h1>
-        <StatsBadge />
+        {/* a REC (needs the `Stats` service) → placed by yielding it */}
+        {yield* StatsBadge}
       </header>
       <p className="mt-6 mb-8 leading-relaxed text-slate-400">{config.tagline}</p>
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Counter />
-        <Likes />
-        <Todos />
+        {yield* Counter}
+        {yield* Likes}
+        {yield* Todos}
         <Suspense
           fallback={
             <p className="rounded-xl border border-dashed border-slate-800 p-4 text-slate-500 sm:col-span-2">
@@ -150,11 +175,11 @@ export const Dashboard = component(function* () {
             </p>
           }
         >
-          <div className="sm:col-span-2">
-            <Greeting />
-          </div>
+          <div className="sm:col-span-2">{yield* Greeting}</div>
         </Suspense>
       </section>
+      {/* a plain React component → written as ordinary JSX, no yield */}
+      <Footer />
     </main>
   );
 });

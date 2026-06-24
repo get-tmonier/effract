@@ -1,0 +1,25 @@
+@theme {
+  --color-bg: #07090f;
+  --color-bg-2: #0b0e14;
+  --color-panel: #11151f;
+  --color-panel-2: #161b27;
+  --color-line: #1f2532;
+  --color-line-2: #2a3142;
+
+  --color-ink: #e9ecf4;
+  --color-ink-dim: #aab2c5;
+  --color-muted: #6f7891;
+
+  --color-violet: #7c5cff;
+  --color-violet-bright: #9b82ff;
+  --color-teal: #29d3c2;
+  --color-teal-bright: #5ce6d8;
+
+  --color-amber: #ffbd2e;
+  --color-rose: #ff6b81;
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}

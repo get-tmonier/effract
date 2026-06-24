@@ -6,7 +6,7 @@
  */
 import type { ReactElement } from 'react';
 import { renderToReadableStream } from 'react-dom/server';
-import { Runtime } from '@tmonier/effract';
+import { mount } from '@tmonier/effract';
 import { AppLive, Dashboard } from '@effract/shared';
 
 const port = Number(Bun.env.PORT ?? '3000');
@@ -32,11 +32,7 @@ function Document(): ReactElement {
         <style dangerouslySetInnerHTML={{ __html: appCss }} />
       </head>
       <body>
-        <div id="root">
-          <Runtime layer={AppLive}>
-            <Dashboard />
-          </Runtime>
-        </div>
+        <div id="root">{mount(AppLive, Dashboard)}</div>
       </body>
     </html>
   );

@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
 import * as Layer from 'effect/Layer';
 import { AtomRef } from 'effect/unstable/reactivity';
-import { Runtime, component, hook, observe } from '@tmonier/effract';
+import { rec, hook, mount, observe } from '@tmonier/effract';
 
 class Cart extends Context.Service<
   Cart,
@@ -30,7 +30,7 @@ const CartLive = Layer.sync(Cart)(() => {
   };
 });
 
-export const CartView = component(function* () {
+export const CartView = rec(function* () {
   const cart = yield* Cart;
   const items = yield* hook(observe(($) => $(cart.items))); // reactive read of service state
   return (
@@ -43,8 +43,4 @@ export const CartView = component(function* () {
   );
 });
 
-export const App = (): ReactNode => (
-  <Runtime layer={CartLive}>
-    <CartView />
-  </Runtime>
-);
+export const App = (): ReactNode => mount(CartLive, CartView);

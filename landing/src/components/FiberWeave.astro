@@ -1,0 +1,149 @@
+---
+/**
+ * The thesis as the hero's living backdrop: a field of woven fibers in React's
+ * cyan and Effect's violet, with bright comets of light racing along them in
+ * opposite directions and crossing at the weave. It sits *behind* the hero
+ * content (dimmed in the centre so text stays readable), so it costs no vertical
+ * space. No labels — the coloured "React"/"Effect" in the title name the colours.
+ */
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+}
+const { weave } = Astro.props.content;
+
+const VW = 1200;
+const VH = 600;
+const my = VH / 2;
+const N = 6;
+const amp = 124;
+const periodX = 400; // 3 weave periods across the band
+const k = (Math.PI * 2) / periodX;
+const step = 8;
+
+const strands = Array.from({ length: N }, (_, i) => {
+  const phase = (i / N) * Math.PI * 2;
+  let d = '';
+  let len = 0;
+  let prev: [number, number] | null = null;
+  for (let x = 0; x <= VW; x += step) {
+    const y = my + Math.sin(x * k + phase) * amp;
+    if (prev) len += Math.hypot(x - prev[0], y - prev[1]);
+    prev = [x, y];
+    d += `${x === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)} `;
+  }
+  const length = Math.round(len);
+  return {
+    d: d.trim(),
+    react: i % 2 === 0,
+    length,
+    gap: length - 64,
+    dur: (3.0 + i * 0.4).toFixed(2),
+  };
+});
+---
+
+<div class="fw-bg" aria-hidden="true">
+  <svg
+    class="fw-svg"
+    viewBox={`0 0 ${VW} ${VH}`}
+    preserveAspectRatio="xMidYMid slice"
+    fill="none"
+    role="img"
+    aria-label={weave.aria}
+  >
+    <defs>
+      <!-- gently dim the centre so the headline stays readable; bright toward the edges -->
+      <radialGradient id="fw-vig" cx="0.5" cy="0.5" r="0.66">
+        <stop offset="0" stop-color="#3c3c3c"></stop>
+        <stop offset="0.5" stop-color="#838383"></stop>
+        <stop offset="0.9" stop-color="#fff"></stop>
+      </radialGradient>
+      <mask id="fw-mask">
+        <rect width={VW} height={VH} fill="url(#fw-vig)"></rect>
+      </mask>
+    </defs>
+
+    <g mask="url(#fw-mask)" stroke-linecap="round" fill="none">
+      {/* dim base strands */}
+      {
+        strands.map((s) => (
+          <path
+            class:list={['fw-base', s.react ? 'react' : 'effect']}
+            d={s.d}
+            stroke={s.react ? 'var(--react)' : 'var(--effect)'}
+          />
+        ))
+      }
+      {/* bright comets of light — React one way, Effect the other */}
+      {
+        strands.map((s) => (
+          <path
+            class:list={['fw-comet', s.react ? 'react' : 'effect']}
+            d={s.d}
+            style={`--len:${s.length};--gap:${s.gap};--dur:${s.dur}s`}
+          />
+        ))
+      }
+    </g>
+  </svg>
+</div>
+
+<style>
+  .fw-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .fw-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .fw-base {
+    stroke-width: 2.5;
+    opacity: 0.42;
+    filter: drop-shadow(0 0 3px currentColor);
+  }
+  .fw-base.react,
+  .fw-comet.react {
+    color: var(--react);
+  }
+  .fw-base.effect,
+  .fw-comet.effect {
+    color: var(--effect);
+  }
+
+  .fw-comet {
+    stroke: currentColor;
+    stroke-width: 3.6;
+    stroke-dasharray: 64 var(--gap);
+    stroke-dashoffset: var(--len);
+    filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 15px currentColor);
+    animation: fw-run var(--dur) linear infinite;
+  }
+  .fw-comet.effect {
+    animation-direction: reverse;
+  }
+  @keyframes fw-run {
+    from {
+      stroke-dashoffset: var(--len);
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fw-comet {
+      animation: none;
+      opacity: 0;
+    }
+    .fw-base {
+      opacity: 0.45;
+    }
+  }
+</style>

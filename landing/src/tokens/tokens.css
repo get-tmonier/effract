@@ -1,0 +1,29 @@
+/* Design tokens — single source of truth for the effract brand. */
+:root {
+  /* surfaces */
+  --bg: #07090f;
+  --bg-2: #0b0e14;
+  --panel: #11151f;
+  --panel-2: #161b27;
+  --line: #1f2532;
+  --line-2: #2a3142;
+
+  /* ink */
+  --ink: #e9ecf4;
+  --ink-dim: #aab2c5;
+  --muted: #6f7891;
+
+  /* the two fibers */
+  --violet: #7c5cff;
+  --violet-bright: #9b82ff;
+  --teal: #29d3c2;
+  --teal-bright: #5ce6d8;
+
+  /* brand identity: React (its iconic cyan) and Effect (its purple) */
+  --react: #61dafb;
+  --effect: #a78bfa;
+
+  /* signals */
+  --amber: #ffbd2e;
+  --rose: #ff6b81;
+}

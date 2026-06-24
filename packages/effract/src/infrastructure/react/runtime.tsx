@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * The `<Runtime>` boundary. It builds an Effect `ManagedRuntime` once from a
- * `Layer` and hands it down through React context, where every effract
- * component reads it. This is the seam where "server vs client" lives: provide
- * a browser layer and the same components run in a SPA; provide a server layer
- * and they run under Node, Bun, or a Web Worker — the components never change.
+ * The runtime provider that `mount` wraps your tree in. It builds an Effect
+ * `ManagedRuntime` once from a `Layer` and hands it down through React context,
+ * where every effract component reads it. This is the seam where "server vs
+ * client" lives: provide a browser layer and the same components run in a SPA;
+ * provide a server layer and they run under Node, Bun, or a Web Worker — the
+ * components never change. Use `mount(layer, Root)`; `Runtime` is the low-level
+ * provider underneath it.
  *
  * Services are resolved up-front into the runtime's context (the RSC-style
  * "resolve near the root" mode), so reading a service inside a component is a
@@ -33,17 +35,13 @@ const executorFromRuntime = (runtime: AnyManagedRuntime): Executor => ({
 export interface RuntimeProps<ROut, E> {
   /** A self-contained layer (no open requirements) providing the subtree's services. */
   readonly layer: Layer.Layer<ROut, E, never>;
-  readonly children: ReactNode;
+  readonly children?: ReactNode;
 }
 
 /**
- * Provide an Effect runtime to a React subtree.
- *
- * ```tsx
- * <Runtime layer={AppLive}>
- *   <Dashboard />
- * </Runtime>
- * ```
+ * Provide an Effect runtime to a React subtree. Prefer `mount(layer, Root)`,
+ * which wraps the root REC in this provider and checks the tree's services at
+ * compile time. Reach for `Runtime` directly only to wrap non-REC React trees.
  */
 export function Runtime<ROut, E>({ layer, children }: RuntimeProps<ROut, E>): ReactNode {
   // Build the runtime exactly once for this boundary instance.
@@ -68,7 +66,7 @@ const useRuntimeContext = (): RuntimeContextValue => {
   const value = useContext(RuntimeContext);
   if (value === null) {
     throw new Error(
-      'effract: no <Runtime> found above this component. Wrap your tree in <Runtime layer={...}>.',
+      'effract: no runtime found above this component. Mount your root with mount(layer, Root).',
     );
   }
   return value;

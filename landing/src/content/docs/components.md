@@ -1,0 +1,81 @@
+---
+title: Components
+description: component, view, and hook — the two ways to write a component as an Effect program.
+group: Core
+order: 2
+---
+
+effract gives you two component constructors. Both produce a **REC** (React Effect Component). You
+write a REC _only_ for a component that reaches for the runtime — a service, or a hook bridged through
+Effect. **Plain React components stay plain**: ordinary functions used as `<Panel />` JSX, untouched.
+The two compose freely in the same tree.
+
+## `component` — the hook-capable REC
+
+The headline. The body yields Effect services and effects, and `yield* hook(...)` for React hooks,
+all interpreted inside the render pass. Note that `Panel` below is a plain React component placed as
+ordinary JSX — effract never asks you to rewrite it.
+
+```tsx
+const Dashboard = rec(function* () {
+  const stats = yield* Stats;
+  const [tab, setTab] = yield* hook(useState('overview'));
+  return <Panel tab={tab} total={stats.total} onTab={setTab} />; // Panel is plain React
+});
+```
+
+The component's required services are inferred from what it yields, so `mount` can verify the layer
+provides them.
+
+## Placing a REC
+
+A REC is **not** a JSX element — `<Dashboard />` is a compile error. You place a REC by `yield*`-ing
+it inside another component's returned JSX:
+
+```tsx
+const Page = rec(function* () {
+  return (
+    <main>
+      {yield* Dashboard /* no props */}
+      {yield* Greet.with({ name: 'Ada' }) /* with props */}
+    </main>
+  );
+});
+```
+
+Plain components stay normal JSX, so a REC and a plain component sit side by side:
+`<Card>{yield* Counter}</Card>`.
+
+## `view` — resolve up front
+
+When a component is pure data → markup (no hooks), `view` runs it as a single Effect. It's the
+simpler, RSC-friendly mode — ideal near the root for flags, the current user, or permissions.
+
+```tsx
+const Banner = view(
+  Effect.gen(function* () {
+    const flags = yield* Flags;
+    return flags.beta ? <aside>You're on the beta.</aside> : null;
+  }),
+);
+```
+
+## Async and Suspense
+
+Reading an asynchronous effect suspends the component through React Suspense and resumes inline when
+the value is ready — no `useEffect`, no `isLoading` flag:
+
+```tsx
+const Profile = rec(function* () {
+  const api = yield* Api;
+  const user = yield* api.fetchUser(); // suspends here
+  return <h2>Welcome, {user.name}</h2>;
+});
+
+// <Suspense> is a host element (plain JSX); the Profile REC is placed by yielding it
+const Account = rec(function* () {
+  return <Suspense fallback={<Spinner />}>{yield* Profile}</Suspense>;
+});
+```
+
+Errors in the Effect channel are thrown to the nearest React error boundary.

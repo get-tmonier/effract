@@ -2,9 +2,11 @@ packages:
   - "packages/*"
   - "apps/*"
   - "examples"
+  - "landing"
 
 allowBuilds:
   '@parcel/watcher': false
+  esbuild: true
   msgpackr-extract: false
   sharp: true
 

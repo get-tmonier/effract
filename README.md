@@ -18,24 +18,34 @@
 ---
 
 ```tsx
-const Dashboard = component(function* () {
+const Dashboard = rec(function* () {
   const stats = yield* Stats; // ← an Effect service, from the runtime
   const [tab, setTab] = yield* hook(useState('overview')); // ← a real React hook
-  return <Panel tab={tab} total={stats.total} onTab={setTab} />;
+  // <Card> and <Panel> are plain React components — untouched, just JSX.
+  return (
+    <Card>
+      <Panel tab={tab} total={stats.total} onTab={setTab} />
+    </Card>
+  );
 });
 ```
 
 One body. Two languages — Effect's and React's — flowing through a single stream of `yield*`. The Effect
 interpreter runs **inside React's render pass**, so the hook calls are genuine React hooks with a stable
-order, and the services come from an Effect `Context` supplied by a `<Runtime>` boundary near the root.
+order, and the services come from an Effect `Context` wired in once with `mount(...)` near the root.
 It is 100% real React. There is no forked reconciler.
+
+> **effract is incremental — not a rewrite.** Plain React components (`<Card>`, `<Panel>`, buttons, layout —
+> anything presentational) stay *exactly* as they are: ordinary functions used as JSX. You write a **REC**
+> with `rec(...)` *only* for a component that actually reaches for the runtime (an Effect service, or a
+> React hook bridged through Effect). The two compose freely in the same tree.
 
 ## The thesis: two fibers, one component
 
 React schedules work on units it calls **fibers**. Effect schedules work on units it also calls **fibers**.
 effract is the loom between the two looms.
 
-A **React Effect Component** (REC) is an ordinary React component whose body is a generator. effract drives
+A **React Effect Component** (REC) is a React component whose body is a generator. effract drives
 that generator *synchronously, during render*, and answers each `yield*` based on what it is:
 
 | You write | effract does |
@@ -48,6 +58,10 @@ that generator *synchronously, during render*, and answers each `yield*` based o
 Because the walk is synchronous and deterministic, your hooks stay valid React hooks. effract cooperates
 with React's reconciler; it never replaces it.
 
+A REC is **not** a JSX element — `<Dashboard />` is a compile error. You *place* a REC by `yield*`-ing it
+inside another component's returned JSX: `{yield* Counter}` for no props, `{yield* Greet.with({ name: 'Ada' })}`
+with props. Plain React components stay normal JSX, so the two sit side by side: `<Card>{yield* Counter}</Card>`.
+
 ## The RSC parallel
 
 React Server Components already taught us that a component can run in two very different places and stream
@@ -56,13 +70,15 @@ its result across the boundary. effract generalises the idea: the boundary isn't
 
 ```tsx
 // the SAME body, rendered three ways
-<Runtime layer={BrowserLive}><Dashboard /></Runtime>   // SPA
-<Runtime layer={ServerLive}><Dashboard /></Runtime>    // Bun / Node streaming SSR
-renderToFlightStream(<Dashboard />, { runtime })        // React Server Component (Flight)
+mount(BrowserLive, Dashboard)                        // SPA
+mount(ServerLive, Dashboard)                         // Bun / Node streaming SSR
+renderToFlightStream(<DashboardRSC />, { runtime })  // React Server Component (Flight)
 ```
 
 Provide a browser layer and it's a SPA. Provide a server layer and it streams SSR. Drive it with the Flight
-renderer and it's an RSC. The component never changes — only the runtime under it does.
+renderer and it's an RSC. The component never changes — only the runtime under it does. `mount` also checks
+**at compile time** that the layer provides every service the tree needs; a missing service is a type error
+that names the service.
 
 ## Install
 
@@ -75,21 +91,33 @@ pnpm add @tmonier/effract-rsc
 > Requires **React 19.2+** and **Effect v4**.
 
 ```tsx
-import { Runtime, component, hook } from '@tmonier/effract';
+import { mount, rec, hook } from '@tmonier/effract';
+import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 
-const Counter = component(function* () {
+// Card is a PLAIN React component — an ordinary function, used as JSX, untouched by effract
+const Card = ({ children }: { children: React.ReactNode }) => <section className="card">{children}</section>;
+
+// Counter is a REC — it reaches for a service, so it's written with `rec(...)`
+const Counter = rec(function* () {
   const stats = yield* Stats;
   const [n, setN] = yield* hook(useState(0));
   return <button onClick={() => setN(n + 1)}>{n} · {stats.total} total</button>;
 });
 
-export const App = () => (
-  <Runtime layer={AppLive}>
-    <Counter />
-  </Runtime>
-);
+// App is also a REC; it places the plain Card as JSX and the Counter REC by yielding it
+const App = rec(function* () {
+  return <Card>{yield* Counter}</Card>;
+});
+
+// wire the runtime in once at the boundary — `mount` returns a ReactNode
+createRoot(document.getElementById('root')!).render(mount(AppLive, App));
 ```
+
+`mount(AppLive, App)` verifies **at compile time** that `AppLive` provides every service the tree needs —
+a missing service is a type error that names it. Plain components like `Card` never change; you reach for
+`rec(...)` only where a component actually needs the runtime, and place a REC with `{yield* Counter}`
+(or `{yield* Counter.with({ ... })}` to pass props).
 
 ## Reactivity, without footguns
 
@@ -158,8 +186,8 @@ Four full integrations in [`apps/`](./apps), each rendering the **same shared co
 
 - The generator body is driven **synchronously inside the render pass** — never on a background fiber — so
   every `hook(...)` is an ordinary React hook with a stable call order.
-- Services are resolved with a **synchronous `Context` lookup** from a `ManagedRuntime` built once at the
-  `<Runtime>` boundary (the RSC-style "resolve up front near the root").
+- Services are resolved with a **synchronous `Context` lookup** from a `ManagedRuntime` built once by
+  `mount(...)` at the root boundary (the RSC-style "resolve up front near the root").
 - Async effects suspend through **React's own `use`**, with a per-instance promise cache so a Suspense
   retry replays deterministically.
 - The reconciler is React's. effract is an interpreter that sits inside it, not beside it.
@@ -168,7 +196,7 @@ Four full integrations in [`apps/`](./apps), each rendering the **same shared co
 
 | Package | What it is |
 | --- | --- |
-| [`@tmonier/effract`](./packages/effract) | the core: `component`, `view`, `hook`, `<Runtime>`, signals |
+| [`@tmonier/effract`](./packages/effract) | the core: `rec`, `view`, `hook`, `mount`, signals |
 | [`@tmonier/effract-rsc`](./packages/effract-rsc) | Flight server renderer + Web Worker variant |
 | [`@tmonier/effract-vite`](./packages/effract-vite) | a one-import Vite plugin |
 

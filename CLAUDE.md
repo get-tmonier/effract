@@ -30,7 +30,7 @@ packages/<name>/src/
   index.ts          the only composition seam (plus subpath entries)
 ```
 
-- `@tmonier/effract` — core (component/view/hook/Runtime/signals).
+- `@tmonier/effract` — core (rec/view/hook/mount/signals).
 - `@tmonier/effract-rsc` — Flight server renderer + Web Worker + `/driver`.
 - `@tmonier/effract-vite` — Vite plugin.
 - `apps/shared` — the services + composed `AppLive` layer + components every example renders.

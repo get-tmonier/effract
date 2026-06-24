@@ -5,7 +5,7 @@
  * signals bridge observes. `AppLive` composes them, wiring `Config` into
  * `Greeter` with `Layer.provide`.
  *
- * Provide `AppLive` through a `<Runtime>` (client/SSR) or a Flight render (RSC)
+ * Provide `AppLive` to `mount(AppLive, App)` (client/SSR) or a Flight render (RSC)
  * and the same components light up. That is the whole demonstration.
  */
 import * as Context from 'effect/Context';

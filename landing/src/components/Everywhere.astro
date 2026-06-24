@@ -1,0 +1,41 @@
+---
+import { emphasize } from '#lib/text';
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+}
+const { everywhere } = Astro.props.content;
+const icons = ['◰', '⊟', '⊞', '◈'];
+---
+
+<section id="everywhere" class="relative overflow-hidden border-y border-line bg-bg-2/40">
+  <div class="mx-auto max-w-6xl px-5 py-14 sm:py-20 lg:py-24">
+    <div class="reveal mx-auto max-w-2xl text-center">
+      <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{everywhere.label}</p>
+      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl text-balance">{everywhere.title}</h2>
+      <p class="mt-5 leading-relaxed text-ink-dim text-pretty" set:html={emphasize(everywhere.body)} />
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {
+        everywhere.runtimes.map((rt, i) => (
+          <div
+            class="reveal group flex items-center gap-4 rounded-xl border border-line bg-panel/40 p-4 transition-colors hover:border-line-2 hover:bg-panel/60"
+            style={`--reveal-delay: ${i * 70}ms`}
+          >
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line-2 bg-bg-2 text-xl text-teal transition-colors group-hover:border-teal/40">
+              {icons[i]}
+            </span>
+            <div class="min-w-0">
+              <h3 class="font-semibold leading-tight">{rt.name}</h3>
+              <p class="truncate text-sm text-muted">{rt.desc}</p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="reveal mt-7 text-center font-mono text-xs text-muted">{everywhere.caption}</p>
+  </div>
+</section>
