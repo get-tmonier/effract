@@ -46,11 +46,25 @@ const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
 
   <div class="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-5 py-10 lg:grid-cols-[230px_minmax(0,1fr)] lg:py-14">
     <aside class="lg:sticky lg:top-24 lg:h-max">
-      <details class="docs-nav lg:open" open>
-        <summary class="mb-2 cursor-pointer font-mono text-xs tracking-widest text-muted uppercase lg:pointer-events-none">
-          On this site
+      <details class="docs-nav">
+        <summary class="docs-nav-toggle">
+          <span>Documentation</span>
+          <svg
+            class="chev"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
         </summary>
-        <nav class="flex flex-col gap-6">
+        <nav class="docs-nav-body flex flex-col gap-6">
           {
             groups.map((group) => (
               <div>
@@ -247,9 +261,56 @@ const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
     color: var(--ink);
     font-weight: 500;
   }
+  /* Mobile: a tappable toggle; the nav is collapsed by default. */
+  .docs-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.7rem 0.95rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--panel) 55%, transparent);
+    color: var(--ink);
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  .docs-nav-toggle::-webkit-details-marker {
+    display: none;
+  }
+  .docs-nav-toggle .chev {
+    color: var(--muted);
+    transition: rotate 0.2s ease;
+  }
+  .docs-nav[open] .docs-nav-toggle .chev {
+    rotate: 180deg;
+  }
+  .docs-nav-body {
+    margin-top: 0.9rem;
+  }
+  /* Desktop: persistent sidebar — hide the toggle, always show the nav. */
   @media (min-width: 1024px) {
-    .docs-nav > summary {
+    .docs-nav-toggle {
       display: none;
+    }
+    .docs-nav-body {
+      display: flex !important;
+      margin-top: 0;
     }
   }
 </style>
+
+<script>
+  // Persistent sidebar on desktop, collapsed disclosure on mobile.
+  const nav = document.querySelector<HTMLDetailsElement>('.docs-nav');
+  if (nav) {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const sync = (): void => {
+      if (mq.matches) nav.open = true;
+    };
+    sync();
+    mq.addEventListener('change', sync);
+  }
+</script>

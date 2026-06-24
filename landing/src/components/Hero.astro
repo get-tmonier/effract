@@ -11,8 +11,8 @@ interface Props {
 const { content, locale } = Astro.props;
 const { hero } = content;
 
-const heroCode = `// a REC: an Effect program that is
-// also a real React component
+const heroCode = `// Counter: a React component,
+// written as an Effect program
 const Counter = rec(function* () {
   const stats = yield* Stats
   const [n] = yield* hook(useState(0))

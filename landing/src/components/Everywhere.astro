@@ -9,29 +9,32 @@ const icons = ['◰', '⊟', '⊞', '◈'];
 ---
 
 <section id="everywhere" class="relative overflow-hidden border-y border-line bg-bg-2/40">
-  <div class="mx-auto max-w-6xl px-5 py-24 lg:py-32">
+  <div class="mx-auto max-w-6xl px-5 py-16 sm:py-24 lg:py-32">
     <div class="reveal mx-auto max-w-2xl text-center">
       <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{everywhere.label}</p>
       <h2 class="text-3xl font-bold tracking-tight sm:text-4xl text-balance">{everywhere.title}</h2>
       <p class="mt-5 leading-relaxed text-ink-dim text-pretty">{everywhere.body}</p>
     </div>
 
-    <div class="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2">
       {
         everywhere.runtimes.map((rt, i) => (
           <div
-            class="reveal group relative rounded-2xl border border-line bg-panel/40 p-6 transition-colors hover:border-line-2"
-            style={`--reveal-delay: ${i * 90}ms`}
+            class="reveal group flex items-center gap-4 rounded-xl border border-line bg-panel/40 p-4 transition-colors hover:border-line-2 hover:bg-panel/60"
+            style={`--reveal-delay: ${i * 70}ms`}
           >
-            <div class="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-            <span class="text-2xl text-teal">{icons[i]}</span>
-            <h3 class="mt-4 font-semibold">{rt.name}</h3>
-            <p class="mt-1 text-sm text-muted">{rt.desc}</p>
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line-2 bg-bg-2 text-xl text-teal transition-colors group-hover:border-teal/40">
+              {icons[i]}
+            </span>
+            <div class="min-w-0">
+              <h3 class="font-semibold leading-tight">{rt.name}</h3>
+              <p class="truncate text-sm text-muted">{rt.desc}</p>
+            </div>
           </div>
         ))
       }
     </div>
 
-    <p class="reveal mt-8 text-center font-mono text-xs text-muted">{everywhere.caption}</p>
+    <p class="reveal mt-7 text-center font-mono text-xs text-muted">{everywhere.caption}</p>
   </div>
 </section>

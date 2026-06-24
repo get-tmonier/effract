@@ -25,7 +25,7 @@ const fr: SiteContent = {
   thesis: {
     label: 'La thèse',
     title: 'Deux fibres, un composant',
-    body: 'React ordonnance son travail sur des fibres. Effect aussi. effract est le métier à tisser entre les deux. Le corps d’un composant est un générateur interprété au sein de la passe de rendu de React — un seul flux de yield* parle les deux langages. C’est du React 100 % réel. Le réconciliateur n’est jamais remplacé.',
+    body: 'React ordonnance son travail sur des fibres ; Effect aussi. Le corps d’un composant est un générateur interprété dans la passe de rendu de React — un seul flux de yield* qui parle les deux langages. Du React 100 % réel, sans réconciliateur remplacé.',
     rows: [
       { write: 'yield* Stats', does: 'résout un service depuis le runtime — de façon synchrone' },
       { write: 'yield* hook(useState(0))', does: 'un vrai hook React, dans un ordre stable' },
@@ -36,7 +36,7 @@ const fr: SiteContent = {
   everywhere: {
     label: 'Un composant, tous les runtimes',
     title: 'Serveur ou client : un simple mount(...)',
-    body: 'Fournissez un layer navigateur et c’est une SPA. Un layer serveur et c’est du SSR en flux. Branchez le moteur Flight et c’est un React Server Component. Le composant ne change pas — seul le runtime que vous montez sous lui change.',
+    body: 'Un layer navigateur en fait une SPA. Un layer serveur émet du SSR en flux. Le moteur Flight en fait un RSC. Le composant ne change pas — seul le runtime sous lui change.',
     runtimes: [
       { name: 'SPA', desc: 'Vite, dans le navigateur' },
       { name: 'SSR', desc: 'Bun / Node en flux' },
@@ -48,23 +48,23 @@ const fr: SiteContent = {
   philosophy: {
     label: 'Philosophie',
     title: 'Gardez la couche de rendu ennuyeuse',
-    body: 'Un bon composant React doit être propre, presque banal : structure et interaction, rien de plus. Le reste — services, données async, flags, permissions, retries — n’a pas sa place dans React. effract est d’accord. Il résout ces dépendances au point de composition, en ligne, et remet à votre JSX le résultat fini et typé.',
+    body: 'Un composant React doit être presque banal : structure et interaction, rien de plus. Le difficile — services, async, flags, retries — vit hors de React, résolu au point de composition et remis à votre JSX en résultat fini et typé.',
     points: [
       {
         title: 'Le difficile vit dans Effect',
-        desc: 'Retries, interruption, concurrence, cache, sûreté des ressources, tracing — gérés par Effect, hors de l’arbre de rendu, où ils sont testables et réutilisables. Le composant se contente de déclarer ses besoins.',
+        desc: 'Retries, concurrence, cache, sûreté des ressources, tracing — gérés par Effect, hors de l’arbre de rendu, où ils sont testables et réutilisables.',
       },
       {
         title: 'La composition async devient triviale',
-        desc: 'Plus d’arbre de hooks, d’états de chargement et de dépendances en cascade. Tout est résolu avant le rendu, donc le corps se lit de haut en bas, presque ennuyeux — et c’est précisément le but.',
+        desc: 'Plus d’états de chargement ni de hooks en cascade : tout est résolu avant le rendu, donc le corps se lit de haut en bas.',
       },
       {
         title: 'La bonne idée des RSC, sans le serveur',
-        desc: 'Ce qui avait de la valeur dans les React Server Components, c’était de rapprocher la résolution des dépendances de la racine de composition — pas « React sur le serveur ». effract garde l’idée et lâche le verrou : ça marche dans n’importe quel runtime.',
+        desc: 'L’intérêt des RSC était de rapprocher la résolution des dépendances de la racine de composition. effract le garde et lâche le verrou — ça marche dans n’importe quel runtime.',
       },
       {
         title: 'Une primitive, pas un zoo',
-        desc: 'Remisez la pile useEffect, librairie de fetch, context, store et server actions. Un seul yield* sur Effect exprime dépendance, async et état — un seul modèle mental, de bout en bout.',
+        desc: 'Remisez useEffect, une librairie de fetch, le context, un store et les server actions — un seul yield* exprime dépendance, async et état.',
       },
     ],
   },
@@ -74,7 +74,7 @@ const fr: SiteContent = {
     items: [
       {
         title: 'Incrémental, pas une réécriture',
-        desc: 'Les composants React ordinaires restent tels quels — du JSX <Component /> classique, intact. Vous écrivez un REC avec rec(...) seulement là où il fait appel à un service, et vous le placez avec {yield* Rec}. Les deux se composent librement dans le même arbre.',
+        desc: 'Les composants React ordinaires restent intacts — du JSX <Component /> classique. Sortez un REC seulement là où il faut un service, et placez-le avec {yield* Rec}.',
       },
       {
         title: 'Du vrai React, de bout en bout',
@@ -93,12 +93,8 @@ const fr: SiteContent = {
         desc: 'Le même corps pilote un Server Component async et émet du Flight standard, depuis un serveur ou un Web Worker.',
       },
       {
-        title: 'Des layers, composés',
-        desc: 'Les services dépendent de services. Composez votre runtime avec les Layers d’Effect et montez-le une fois — les composants se contentent de lire le résultat.',
-      },
-      {
         title: 'Typé de bout en bout',
-        desc: 'Besoins et erreurs sont inférés depuis vos yield. Strict par design : tsgo, oxlint, dependency-cruiser, frontières hexagonales.',
+        desc: 'Chaque service dont un composant a besoin et chaque erreur qu’il peut lever sont inférés depuis vos yield — et mount ne compile pas si le runtime ne les fournit pas.',
       },
     ],
   },

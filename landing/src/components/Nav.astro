@@ -38,6 +38,12 @@ const base = locale === 'fr' ? '/fr/' : '/';
 
     <div class="flex items-center gap-2">
       <a
+        href={localePath('/docs/', locale)}
+        class="px-1 text-sm font-medium text-ink-dim transition-colors hover:text-ink md:hidden"
+      >
+        {nav.docs}
+      </a>
+      <a
         href={altPath}
         class="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-ink-dim uppercase transition-colors hover:border-line-2 hover:text-ink"
         aria-label={`Switch to ${altLocale}`}
