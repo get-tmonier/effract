@@ -59,6 +59,17 @@ example name:
 build-examples:
     pnpm -r --if-present --filter "./apps/*" run build
 
+# --- landing site (effract.tmonier.com) ---
+
+landing:
+    pnpm --filter @effract/landing dev
+
+landing-check:
+    pnpm --filter @effract/landing run check
+
+landing-build:
+    pnpm --filter @effract/landing run build
+
 # --- maintenance ---
 
 bump:

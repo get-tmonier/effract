@@ -7,7 +7,7 @@ import type { KnipConfig } from 'knip';
  * things its own way) and are excluded — mirroring how argot exempts benchmarks.
  */
 const config: KnipConfig = {
-  ignore: ['apps/**', 'examples/**'],
+  ignore: ['apps/**', 'examples/**', 'landing/**'],
   workspaces: {
     'packages/*': {
       entry: ['src/**/*.test.{ts,tsx}'],

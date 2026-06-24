@@ -1,0 +1,130 @@
+---
+import CodeWindow from '#components/CodeWindow.astro';
+import Logo from '#components/Logo.astro';
+import { SITE, localePath } from '#lib/site';
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+  locale: 'en' | 'fr';
+}
+const { content, locale } = Astro.props;
+const { hero } = content;
+
+const heroCode = `const Dashboard = component(function* () {
+  const stats = yield* Stats                              // an Effect service
+  const [tab, setTab] = yield* hook(useState("overview")) // a real React hook
+  return <Panel tab={tab} total={stats.total} onTab={setTab} />
+})
+
+// the same component — only the runtime under it changes:
+<Runtime layer={Browser}><Dashboard /></Runtime>  // SPA
+<Runtime layer={Server}><Dashboard /></Runtime>   // streaming SSR
+renderToFlightStream(<Dashboard />, { runtime })  // React Server Component`;
+---
+
+<section class="relative overflow-hidden">
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="hero-aurora" aria-hidden="true"></div>
+
+  <div class="mx-auto grid max-w-6xl gap-12 px-5 pt-32 pb-20 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:pt-40 lg:pb-28">
+    <div class="reveal">
+      <div class="mb-6 inline-flex items-center gap-2.5">
+        <Logo size={40} draw />
+        <span class="rounded-full border border-line bg-panel/60 px-3 py-1 text-xs font-medium tracking-wide text-ink-dim uppercase">
+          {hero.eyebrow}
+        </span>
+      </div>
+
+      <h1 class="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl lg:text-6xl">
+        {hero.titleLead}{' '}
+        <span class="fiber-text-shimmer">{hero.titleGradient}</span>
+      </h1>
+
+      <p class="mt-6 max-w-xl text-lg leading-relaxed text-ink-dim text-balance">
+        {hero.subtitle}
+      </p>
+
+      <div class="mt-9 flex flex-wrap items-center gap-3">
+        <a
+          href={localePath('/docs/', locale)}
+          class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet to-teal px-5 py-3 text-sm font-semibold text-bg shadow-lg shadow-violet/20 transition-transform hover:-translate-y-0.5"
+        >
+          {hero.ctaPrimary}
+          <span class="transition-transform group-hover:translate-x-0.5">→</span>
+        </a>
+        <a
+          href={SITE.github}
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 rounded-xl border border-line bg-panel/50 px-5 py-3 text-sm font-semibold transition-colors hover:border-line-2 hover:bg-panel"
+        >
+          ★ {hero.ctaSecondary}
+        </a>
+      </div>
+
+      <button
+        type="button"
+        class="copy-install group mt-6 inline-flex items-center gap-3 rounded-lg border border-line bg-bg-2/70 px-4 py-2.5 font-mono text-sm transition-colors hover:border-line-2"
+        data-copy="pnpm add @tmonier/effract effect react"
+        aria-label="Copy install command"
+      >
+        <span class="text-teal">$</span>
+        <span class="text-ink-dim">pnpm add <span class="text-ink">@tmonier/effract</span> effect react</span>
+        <span class="copy-icon text-muted transition-colors group-hover:text-ink">⧉</span>
+      </button>
+
+      <p class="mt-4 text-xs text-muted">{hero.installNote}</p>
+    </div>
+
+    <div class="reveal" style="--reveal-delay: 140ms">
+      <CodeWindow code={heroCode} title="dashboard.tsx" />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-grid {
+    position: absolute;
+    inset: -2px;
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(60rem 40rem at 50% -10%, #000 30%, transparent 75%);
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .hero-aurora {
+    position: absolute;
+    top: -20rem;
+    left: 50%;
+    width: 70rem;
+    height: 40rem;
+    translate: -50% 0;
+    background: radial-gradient(closest-side, rgba(124, 92, 255, 0.18), transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.copy-install').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const text = btn.dataset.copy ?? '';
+      try {
+        await navigator.clipboard.writeText(text);
+        const icon = btn.querySelector('.copy-icon');
+        if (icon) {
+          const prev = icon.textContent;
+          icon.textContent = '✓';
+          setTimeout(() => {
+            icon.textContent = prev;
+          }, 1400);
+        }
+      } catch {
+        /* clipboard unavailable */
+      }
+    });
+  });
+</script>

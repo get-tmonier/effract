@@ -1,0 +1,37 @@
+---
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+}
+const { thesis } = Astro.props.content;
+---
+
+<section id="thesis" class="relative mx-auto max-w-6xl px-5 py-24 lg:py-32">
+  <div class="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+    <div class="reveal">
+      <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{thesis.label}</p>
+      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{thesis.title}</h2>
+      <p class="mt-5 leading-relaxed text-ink-dim text-pretty">{thesis.body}</p>
+    </div>
+
+    <div class="reveal" style="--reveal-delay: 120ms">
+      <ul class="overflow-hidden rounded-2xl border border-line">
+        {
+          thesis.rows.map((row, i) => (
+            <li
+              class="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1 px-5 py-4 sm:grid-cols-[minmax(0,_44%)_1fr] sm:items-center"
+              class:list={[i % 2 === 0 ? 'bg-panel/40' : 'bg-transparent']}
+            >
+              <code class="font-mono text-sm whitespace-nowrap text-violet-bright">{row.write}</code>
+              <span class="text-sm text-ink-dim">{row.does}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="mt-4 text-center font-mono text-xs text-muted">
+        one stream of <span class="text-ink">yield*</span> · two fibers underneath
+      </p>
+    </div>
+  </div>
+</section>

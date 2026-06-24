@@ -52,3 +52,23 @@ jobs:
 
       - name: Build the four example apps
         run: just build-examples
+
+  landing:
+    name: landing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up toolchain (mise → node, pnpm, just)
+        uses: jdx/mise-action@v2
+        with:
+          experimental: true
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the landing site (lint + format + astro check)
+        run: pnpm --filter @effract/landing run check
+
+      - name: Build the landing site
+        run: pnpm --filter @effract/landing run build

@@ -1,0 +1,32 @@
+---
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+}
+const { features } = Astro.props.content;
+---
+
+<section id="features" class="mx-auto max-w-6xl px-5 py-24 lg:py-32">
+  <div class="reveal mx-auto max-w-2xl text-center">
+    <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{features.label}</p>
+    <h2 class="text-3xl font-bold tracking-tight sm:text-4xl text-balance">{features.title}</h2>
+  </div>
+
+  <div class="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    {
+      features.items.map((item, i) => (
+        <article
+          class="reveal group relative overflow-hidden rounded-2xl border border-line bg-panel/30 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-line-2 hover:bg-panel/60"
+          style={`--reveal-delay: ${(i % 3) * 80}ms`}
+        >
+          <div class="mb-4 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line-2 bg-bg-2 font-mono text-sm text-teal">
+            {String(i + 1).padStart(2, '0')}
+          </div>
+          <h3 class="font-semibold tracking-tight">{item.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-ink-dim">{item.desc}</p>
+        </article>
+      ))
+    }
+  </div>
+</section>

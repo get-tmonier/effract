@@ -1,0 +1,56 @@
+---
+import Logo from '#components/Logo.astro';
+import { SITE, localePath } from '#lib/site';
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+  locale: 'en' | 'fr';
+}
+const { content, locale } = Astro.props;
+const { footer } = content;
+const year = 2026;
+---
+
+<footer class="border-t border-line">
+  <div class="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-12 sm:flex-row sm:items-start sm:justify-between">
+    <div class="max-w-sm">
+      <div class="flex items-center gap-2.5">
+        <Logo size={26} />
+        <span class="font-semibold tracking-tight">effract</span>
+      </div>
+      <p class="mt-3 text-sm leading-relaxed text-muted">{footer.tagline}</p>
+    </div>
+
+    <nav class="flex flex-wrap gap-x-12 gap-y-6 text-sm">
+      <div class="flex flex-col gap-2.5">
+        <a href={localePath('/docs/', locale)} class="text-ink-dim transition-colors hover:text-ink">
+          {footer.docs}
+        </a>
+        <a href={SITE.github} target="_blank" rel="noopener" class="text-ink-dim transition-colors hover:text-ink">
+          GitHub
+        </a>
+        <a href={SITE.npm} target="_blank" rel="noopener" class="text-ink-dim transition-colors hover:text-ink">
+          {footer.npm}
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="border-t border-line/60">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-5 py-5 text-xs text-muted sm:flex-row">
+      <p>© {year} Tmonier · MIT</p>
+      <p>
+        {footer.builtBy} ·
+        <a
+          href={SITE.portfolio}
+          target="_blank"
+          rel="noopener"
+          class="text-ink-dim underline decoration-line-2 underline-offset-2 transition-colors hover:text-teal"
+        >
+          tmonier.com
+        </a>
+      </p>
+    </div>
+  </div>
+</footer>

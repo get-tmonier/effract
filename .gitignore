@@ -9,6 +9,7 @@ build/
 .output/
 .vinxi/
 .tanstack/
+.astro/
 *.tsbuildinfo
 
 # logs
