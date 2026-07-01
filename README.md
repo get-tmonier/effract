@@ -4,8 +4,8 @@
 
 <p align="center">
   <strong>Write React components as Effect programs.</strong><br/>
-  The same component — and the same <code>mount</code> — runs in a SPA, during SSR, or as a React Server Component —<br/>
-  <em>"server vs client" becomes an implementation detail the bundler resolves, not something you type.</em>
+  Your state and logic live in Effect services — React is purely the render layer.<br/>
+  <em>The same component — and the same <code>mount</code> — runs in a SPA, during SSR, or as an RSC.</em>
 </p>
 
 <p align="center">
@@ -27,17 +27,19 @@
 ---
 
 ```tsx
-const Counter = rec(function* () {
-  const stats = yield* Stats; // an Effect service, from the runtime
-  const [n, setN] = yield* hook(useState(0)); // a real React hook
-  return <Panel n={n} total={stats.total} onTab={setN} />; // <Panel> is plain React
+const Summary = rec(function* () {
+  const cart = yield* Cart; // state + logic live in an Effect service
+  const total = yield* cart.total; // reactive read — re-renders precisely when it changes
+  const box = yield* hook(useRef<HTMLDivElement>(null)); // a genuine React hook, for a DOM ref
+  return <Panel ref={box} total={total} onAdd={cart.add} />; // <Panel> is plain React
 });
 
-createRoot(el).render(mount(AppLive, Counter)); // missing service → compile error
+createRoot(el).render(mount(AppLive, Summary)); // missing service → compile error
 ```
 
-One body, two languages, a single stream of `yield*` — interpreted **inside React's render pass**. The hooks
-are genuine React hooks; the services come from an Effect `Context`. 100% real React, no forked reconciler.
+One body, two languages, a single stream of `yield*` — interpreted **inside React's render pass**. The
+service (its state, its logic) comes from an Effect `Context`; the hook is a genuine React hook, for the
+things that are genuinely React's job. 100% real React, no forked reconciler.
 
 **The whole public API is three primitives** — everything above is already all of them:
 
@@ -51,6 +53,51 @@ components stay pure render.)
 > **Incremental, not a rewrite.** Plain React components stay ordinary `<Component />` JSX. You write a
 > **REC** with `rec(...)` _only_ where a component reaches for a service (or a hook bridged through Effect);
 > the two compose freely in the same tree.
+
+## The idea — logic in Effect, React for render
+
+The pitch effract is really about: **state, and the logic over it, live in Effect services; React only
+renders.** No `useState` threading business rules through a component, no `useEffect` orchestration, no
+logic trapped in the render tree. A component reads a service with `yield*` and returns JSX — that's the
+whole job. React hooks stay for the things that are genuinely React's (a DOM ref, a transition); everything
+else is an Effect.
+
+```tsx
+// ❌ logic in the component — tied to React, recomputed each render, hard to test on its own
+function Cart() {
+  const [items, setItems] = useState<Item[]>([]);
+  const total = useMemo(() => items.reduce((n, i) => n + i.price, 0), [items]);
+  const add = (i: Item) => setItems((xs) => [...xs, i]);
+  return <button onClick={() => add(coffee)}>add · ${total}</button>;
+}
+
+// ✅ logic in a service — testable, universal, reusable; the component only renders
+class Cart extends Context.Service<Cart, {
+  readonly items: Atom<ReadonlyArray<Item>>;
+  readonly total: ReadableAtom<number>;                       // derived, in Effect
+  readonly add: (item: Item) => void;
+}>()('Cart') {}
+
+const CartButton = rec(function* () {
+  const cart = yield* Cart;
+  const total = yield* cart.total;                            // reactive read — precise re-render
+  return <button onClick={() => cart.add(coffee)}>add · ${total}</button>;
+});
+```
+
+Why that's the path worth taking:
+
+- **Testable without React.** A service is a plain Effect program — exercise it with Effect's tooling, no
+  renderer, no `act`, no DOM. The component left behind is too thin to need a test.
+- **Universal by construction.** The same service runs in a SPA, under SSR, in a background fiber, or on the
+  server for an RSC — its state is reachable anywhere an Effect runs. You don't re-implement logic per
+  environment.
+- **Precise, not manual.** A component re-renders only on the atoms it actually read; derivation is declared
+  once with `derive`, not re-`useMemo`'d at every call site.
+- **Composable as data.** Computed (`derive`), async-computed (`derive.effect`), per-entity (`atomFamily`),
+  coalesced writes (`batch`) — all ordinary values in the Effect world, not hook gymnastics.
+
+The **Reactivity** section below is the full toolkit; every [recipe](./examples/src) is written this way.
 
 ## Two fibers, one component
 

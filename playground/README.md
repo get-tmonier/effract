@@ -9,9 +9,11 @@ pinned npm versions (no `catalog:` / `workspace:` protocol), so it installs and
 runs anywhere — including StackBlitz's WebContainer, which can't resolve the
 workspace catalog.
 
-It pulls the **published** `@tmonier/effract` from npm, so it showcases the core
-(`rec` + `hook` + `mount` + a service). When a release ships `query` / `.catch` /
-`.suspense`, bump the version here to demo them too.
+It pulls the **published** `@tmonier/effract` from npm and showcases the canonical
+shape: **logic in Effect, React for render** — a stateful `Cart` service (state +
+`derive`d totals + `batch`), with components that only `yield*` and render. It
+needs the atom toolkit, so it targets `@tmonier/effract@^0.5.0`; publish that
+release before the StackBlitz will resolve.
 
 ```sh
 npm install

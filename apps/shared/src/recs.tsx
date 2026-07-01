@@ -6,7 +6,7 @@
  *
  *   • **RECs** — made with `rec(...)`. They read the runtime (a service, a
  *     hook bridged through Effect) and are placed by *yielding* them:
- *     `{yield* Counter}`. You reach for a REC only when a component needs Effect.
+ *     `{yield* Progress}`. You reach for a REC only when a component needs Effect.
  *
  *   • **Plain React components** — like `Footer` below. They read nothing from
  *     the runtime, so they stay ordinary React and are written `<Footer />`.
@@ -15,10 +15,10 @@
  * component exactly as it is; turn a component into a REC only when it actually
  * needs a service. The two compose freely in the same tree.
  */
-import { Suspense, useState, type ReactNode } from 'react';
-import { rec, hook } from '@tmonier/effract';
+import { Suspense, type ReactNode } from 'react';
+import { rec } from '@tmonier/effract';
 import { StatsBadge } from './universal.tsx';
-import { Config, Greeter, Stats, Store } from './services.ts';
+import { Config, Greeter, Store } from './services.ts';
 
 // Re-exported so a page can pull every shared component from one place; the
 // same value also `serve`s on the server (see `./universal.tsx`).
@@ -44,21 +44,22 @@ function Footer(): ReactNode {
 }
 
 /**
- * The headline: a genuine `useState` hook and an Effect service, interleaved in
- * one render pass. Click it — the hook holds state, the service re-resolves.
+ * Derived state, straight from the service. `remaining` is a `derive` over the
+ * todos atom — computed once in the `Store`, never recomputed in a component.
+ * This tile only reads it and renders.
  */
-export const Counter = rec(function* () {
-  const stats = yield* Stats;
-  const [n, setN] = yield* hook(useState(0));
+export const Progress = rec(function* () {
+  const store = yield* Store;
+  const todos = yield* store.todos;
+  const remaining = yield* store.remaining; // a derived atom — read + subscribe
   return (
-    <button
-      type="button"
-      onClick={() => setN(n + 1)}
-      className={`${card} text-left transition hover:border-violet-500`}
-    >
-      <span className="block text-2xl font-semibold text-slate-100">{n}</span>
-      <span className="text-sm text-slate-400">local hook state · {stats.total} sessions</span>
-    </button>
+    <div className={`${card} text-left`}>
+      <span className="block text-2xl font-semibold text-slate-100">
+        {todos.length - remaining}
+        <span className="text-slate-500">/{todos.length}</span>
+      </span>
+      <span className="text-sm text-slate-400">done · derived in the service</span>
+    </div>
   );
 });
 
@@ -82,22 +83,15 @@ export const Likes = rec(function* () {
 });
 
 /**
- * The fullest call site: a stateful service (`Store`), a precise reactive read
- * (`yield*` the `todos` atom), and a local React hook (`useState` for the draft
- * input) — together in one body.
+ * The fullest call site — and it holds *no* React state. The list, the draft
+ * input value, and "how many are left" all live in the `Store` service; the
+ * component only reads (`yield*`) and dispatches events. There is nothing to test
+ * in React here — the logic is a plain Effect service.
  */
 export const Todos = rec(function* () {
   const store = yield* Store;
   const todos = yield* store.todos;
-  const [draft, setDraft] = yield* hook(useState(''));
-
-  const submit = (): void => {
-    const text = draft.trim();
-    if (text.length > 0) {
-      store.addTodo(text);
-      setDraft('');
-    }
-  };
+  const draft = yield* store.draft; // the input value is a service atom, not useState
 
   return (
     <div className={`${card} sm:col-span-2`}>
@@ -121,12 +115,12 @@ export const Todos = rec(function* () {
         className="mt-3 flex gap-2"
         onSubmit={(event) => {
           event.preventDefault();
-          submit();
+          store.submitDraft();
         }}
       >
         <input
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => store.setDraft(event.target.value)}
           placeholder="add a step…"
           className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 outline-none placeholder:text-slate-600 focus:border-violet-500"
         />
@@ -164,7 +158,7 @@ export const Dashboard = rec(function* () {
       </header>
       <p className="mt-6 mb-8 leading-relaxed text-slate-400">{config.tagline}</p>
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {yield* Counter}
+        {yield* Progress}
         {yield* Likes}
         {yield* Todos}
         <Suspense
