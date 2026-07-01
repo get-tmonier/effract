@@ -38,10 +38,24 @@ yield* query(fetchUser(id).pipe(Effect.retry(policy), Effect.timeout('2 seconds'
 A query's failures ride the same error channel as everything else, so `.catch` renders them (see
 [Typed errors](/docs/errors/)).
 
+## `suspend` — the primitive
+
+You are not forced to use `query`. It is built on a lower-level primitive, **`suspend`**, which is
+exported too. `suspend(effect)` opts an effect into Suspense and the loading obligation — load-once,
+deduped, cancelled on unmount — without query's keyed refetch:
+
+```tsx
+const config = yield* suspend(loadConfig());   // load-once
+const user = yield* query(fetchUser(id), id);  // suspend + refetch when id changes
+```
+
+Reach for `suspend` for one-shot loads, or to build your own async abstractions (a `mutation`, a
+poller, your own cache) on top of it. `query` is just `suspend` with a refetch key.
+
 ## The loading obligation
 
-A REC that yields a `query` carries a loading obligation, `S`, in its type. It bubbles up the tree the
-way service requirements do, and `mount` **will not compile** until it is discharged:
+A REC that yields a `suspend` or `query` carries a loading obligation, `S`, in its type. It bubbles up
+the tree the way service requirements do, and `mount` **will not compile** until it is discharged:
 
 ```tsx
 mount(App, Profile);                          // ✗ compile error: loading not handled
@@ -54,9 +68,33 @@ returning a plain REC. One boundary covers the whole subtree beneath it (React S
 semantics), so a single `.suspense` — or `{ loading }` at `mount` — satisfies an obligation the type
 otherwise bubbles all the way to the root.
 
-On the **server** there is no pending state — a `query` is awaited inline before the HTML is sent — so
-the server `mount` imposes no loading obligation. Loading is a client concern, handled where the tree
-renders interactively.
+### Loading is catch-all, not per-source
+
+Unlike the error channel — a union of tagged types that `.catch` handles per `_tag` — the loading
+channel is **binary**: `S` is `Suspends` or `never`. A pending effect has no tag, so there is nothing to
+route a per-source fallback on; one `.suspense` shows one fallback for everything beneath it. For
+**separate** loading UIs, place a boundary per child — each `.suspense` is its own `<Suspense>`:
+
+```tsx
+const Page = rec(function* () {
+  return (
+    <div>
+      {yield* Profile.suspense(<ProfileSkeleton />)}
+      {yield* Feed.suspense(<FeedSkeleton />)}
+    </div>
+  );
+});
+// Page: REC<…, never> — both children discharged, each with its own fallback
+```
+
+This is exactly how you place multiple `<Suspense>` boundaries in plain React; the type just tracks
+whether anything below is still undischarged.
+
+## Server
+
+On the **server** there is no pending state — a `suspend`/`query` is awaited inline before the HTML is
+sent — so the server `mount` imposes no loading obligation. Loading is a client concern, handled where
+the tree renders interactively.
 
 ## Raw async is the escape hatch
 

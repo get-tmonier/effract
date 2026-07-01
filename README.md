@@ -220,6 +220,21 @@ mount(App, Profile, { loading: <Spinner /> }); // ✓ handled at the boundary
 One `.suspense` discharges the whole subtree beneath it (it _is_ a real `<Suspense>`). On the server
 there's no pending state — a `query` is awaited inline — so the server `mount` imposes no obligation.
 
+Loading is a single **catch-all** obligation, not a per-source union like typed errors (a pending effect
+has no tag): `S` is just `Suspends` or `never`, and one `.suspense` covers everything below it. For
+separate loading UIs, place a boundary per child — `{yield* A.suspense(<ASkeleton />)}` — exactly as
+you'd nest `<Suspense>` boundaries in plain React.
+
+**`query` is built on a primitive.** Not everyone wants query's keyed semantics — so the building block
+is exposed as **`suspend`**. `suspend(effect)` opts an effect into Suspense and the loading obligation
+(load-once); `query(effect, key?)` is that plus refetch-on-key. Reach for `suspend` for one-shot loads,
+or to build your own async abstractions on top:
+
+```tsx
+const config = yield* suspend(loadConfig());   // load-once, tracked
+const user = yield* query(fetchUser(id), id);  // + refetch when id changes
+```
+
 **Raw async is the escape hatch.** A plain `yield* asyncEffect` still suspends at runtime — but the
 compiler can't tell a sync `Effect` from an async one (they're the same type), so it carries **no**
 loading obligation: you bring your own `<Suspense>`. Reach for `query` when you want the type to track
