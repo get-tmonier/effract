@@ -255,13 +255,20 @@ describe('query — async data + loading obligation', () => {
       Effect.tryPromise({ try: () => gateFor(id).promise, catch: (e) => e as NotFound });
 
     const sku = atom(1);
-    // The catchable async yield is the *last* hook-bearing yield in the body, so a
-    // failure never skips a later hook (which on a re-render would trip React's
-    // "rendered fewer hooks" invariant and tear the tree down).
+    const tag = atom('•');
+    // A reactive read comes AFTER the catchable query on purpose: a failure skips
+    // it, so the render calls fewer hooks than the prior success. `.catch` is a
+    // React error boundary, so the throwing render is discarded (no "rendered
+    // fewer hooks" teardown) and the fallback shows regardless of yield order.
     const Product = rec(function* () {
       const id = yield* sku;
       const name = yield* query(load(id), id); // refetch when the id changes
-      return <span data-x="name">{name}</span>;
+      const mark = yield* tag; // ← skipped when the query throws
+      return (
+        <span data-x="name">
+          {name} {mark}
+        </span>
+      );
     })
       .catch({ NotFound: (e) => <span data-x="err">missing {e.id}</span> })
       .suspense(<i>loading</i>);
@@ -281,7 +288,7 @@ describe('query — async data + loading obligation', () => {
       await gateFor(1).promise;
     });
     await flush();
-    expect(container.querySelector('[data-x="name"]')?.textContent).toBe('product-1');
+    expect(container.querySelector('[data-x="name"]')?.textContent).toContain('product-1');
 
     // Refetch to a failing id — the .catch fallback renders in place, and the
     // sibling survives (the tree must NOT unmount).
@@ -299,7 +306,7 @@ describe('query — async data + loading obligation', () => {
     await act(async () => sku.set(1));
     await flush();
     expect(container.querySelector('[data-x="err"]')).toBeNull();
-    expect(container.querySelector('[data-x="name"]')?.textContent).toBe('product-1');
+    expect(container.querySelector('[data-x="name"]')?.textContent).toContain('product-1');
 
     await act(async () => root.unmount());
   });

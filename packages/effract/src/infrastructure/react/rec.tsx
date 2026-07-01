@@ -25,6 +25,7 @@ import {
   Suspense,
   createElement,
   use,
+  useContext,
   useEffect,
   useRef,
   type FunctionComponent,
@@ -32,9 +33,10 @@ import {
   type ReactNode,
 } from 'react';
 import type * as Layer from 'effect/Layer';
-import { driveRecCaught } from '#application/interpreter.ts';
-import type { Placer, RenderCache, Suspender } from '#application/ports.ts';
-import type { RecHandle, RecPlacement } from '#domain/protocol.ts';
+import { driveRec, driveState } from '#application/interpreter.ts';
+import type { Placer, Reader, RenderCache, Suspender } from '#application/ports.ts';
+import type { CatchDispatch, RecHandle, RecPlacement } from '#domain/protocol.ts';
+import { ReadSink, withCatch } from '#infrastructure/react/catch-boundary.tsx';
 import { atomReader } from '#infrastructure/react/reactivity.tsx';
 import {
   makeSuspensableResolver,
@@ -50,6 +52,18 @@ import type {
   REC,
 } from '#infrastructure/rec-core.tsx';
 import { Runtime, useExecutor } from '#infrastructure/react/runtime.tsx';
+
+/** A thenable — how React's `use` signals a suspension. Never a typed failure. */
+const isThenable = (u: unknown): u is PromiseLike<unknown> =>
+  typeof u === 'object' && u !== null && typeof (u as { then?: unknown }).then === 'function';
+
+/** The `_tag` of a tagged error, if this thrown value looks like one. */
+const errorTag = (error: unknown): string | undefined =>
+  typeof error === 'object' &&
+  error !== null &&
+  typeof (error as { readonly _tag?: unknown })._tag === 'string'
+    ? (error as { readonly _tag: string })._tag
+    : undefined;
 
 const useSuspender = (): Suspender => ({ use });
 
@@ -121,21 +135,57 @@ const clientFcFor = (handle: RecHandle<ReactNode>): FunctionComponent<object> =>
     const instanceId = useInstanceId();
     const usedRef = useRef<ReadonlySet<string>>(EMPTY_USED);
     useQueryClaims(instanceId, usedRef);
+    // When inside a `.catch`, record each atom this body reads so the boundary can
+    // watch them for a reset. Reads still go through `atomReader` (per-atom
+    // `useSyncExternalStore`, tearing-safe); recording is a side note.
+    const sink = useContext(ReadSink);
+    const reader: Reader =
+      sink === null
+        ? atomReader
+        : {
+            read: (atom) => {
+              sink.add(atom);
+              return atomReader.read(atom);
+            },
+          };
+    // The hook count of this instance's last *committed* render, so a caught
+    // failure can tell whether it skipped later hooks.
+    const lastHooks = useRef(-1);
 
     const used = new Set<string>();
     const resolver = makeSuspensableResolver(scope, executor, suspender, used);
-    const node = driveRecCaught(
-      handle.body(props),
-      {
-        executor,
-        suspender,
-        cache,
-        suspensableResolver: resolver,
-        reader: atomReader,
-        placer: clientPlacer,
-      },
-      handle.catchHandlers,
-    );
+    const deps = {
+      executor,
+      suspender,
+      cache,
+      suspensableResolver: resolver,
+      reader,
+      placer: clientPlacer,
+    };
+    const state = driveState();
+    let node: ReactNode;
+    try {
+      node = driveRec(handle.body(props), deps, state);
+      // Committing render (no suspension) — remember its hook count.
+      lastHooks.current = state.hooks;
+    } catch (thrown) {
+      const tag = errorTag(thrown);
+      const handler =
+        handle.catchHandlers !== undefined && tag !== undefined
+          ? handle.catchHandlers[tag]
+          : undefined;
+      // Not ours to catch inline — let it propagate: a suspension (to `<Suspense>`),
+      // a REC without a matching `.catch`, or a defect (to the nearest boundary).
+      // Also re-throw a caught failure that skipped later hooks (fewer than the
+      // last committed render): rendering the fallback inline would break the Rules
+      // of Hooks, so the `.catch` error boundary handles it instead (same fallback,
+      // and it recovers when a read atom changes). See `catch-boundary.tsx`.
+      if (handler === undefined || isThenable(thrown) || state.hooks < lastHooks.current) {
+        throw thrown;
+      }
+      node = handler(thrown);
+      lastHooks.current = state.hooks; // the fallback committed too
+    }
     // Reached only when the body did not suspend, i.e. this render will commit —
     // so the claim effects always reconcile against a real, complete used set.
     usedRef.current = used;
@@ -159,8 +209,12 @@ const EMPTY_USED: ReadonlySet<string> = new Set();
 const clientPlacer: Placer = {
   place: (placement: RecPlacement<ReactNode, unknown, unknown>): ReactElement => {
     const element = createElement(clientFcFor(placement.rec), placement.props);
+    const handlers = placement.rec.catchHandlers as CatchDispatch<ReactNode> | undefined;
+    const caught = handlers === undefined ? element : withCatch(handlers, element);
     const fallback = placement.rec.suspenseFallback;
-    return fallback === undefined ? element : createElement(Suspense, { fallback }, element);
+    // Suspense outside the catch boundary: a pending query suspends to the
+    // fallback here; a *failed* one throws to the catch boundary just inside.
+    return fallback === undefined ? caught : createElement(Suspense, { fallback }, caught);
   },
 };
 
@@ -208,6 +262,8 @@ export function mount<ROut, LE, RE, R, S>(
   const handle = rec as unknown as RecHandle<ReactNode>;
   const fallback = handle.suspenseFallback ?? options?.loading;
   const inner = createElement(clientFcFor(handle), {});
-  const root = fallback === undefined ? inner : createElement(Suspense, { fallback }, inner);
+  const handlers = handle.catchHandlers as CatchDispatch<ReactNode> | undefined;
+  const caught = handlers === undefined ? inner : withCatch(handlers, inner);
+  const root = fallback === undefined ? caught : createElement(Suspense, { fallback }, caught);
   return createElement(Runtime<ROut, LE>, { layer }, root);
 }
