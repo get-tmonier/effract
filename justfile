@@ -96,4 +96,4 @@ release version:
     git diff --cached --quiet || git commit -m "chore: release v{{version}}"
     git tag "v{{version}}"
     git push origin main "v{{version}}"
-    @echo "Released v{{version}} — CI builds and publishes to npm"
+    echo "Released v{{version}} — CI builds and publishes to npm"
