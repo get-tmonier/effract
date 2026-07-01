@@ -6,6 +6,43 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-01
+
+**The atom toolkit — reactive state as data in the Effect world.** State, and the logic over it, live in
+Effect services; a component reads it with `yield*` and renders. This release makes that ergonomic: a
+small, composable family of atom primitives — all server-safe — that keep `useState` and derivation out
+of React. Fully additive; existing code is unaffected.
+
+### Added
+
+- **`atom(initial)`** — a writable reactive cell (`.value` / `.set` / `.update`), backed by Effect's
+  `AtomRef`. A write that doesn't change the value (by `Equal`) notifies no one.
+- **`yield* atom`** — read a reactive atom in a REC: it reads the value **and** subscribes this component,
+  so it re-renders precisely when that atom changes. No `hook(useAtomValue(...))`.
+- **`atom.derive(fn)`** — derive a read-only atom from a single atom's value, handed to you directly (no
+  `$`); chains.
+- **`derive(($) => …)`** — a computed atom from *several* atoms; `$` tracks exactly what the selector
+  reads, and derived atoms compose.
+- **`derive.writable(read, write)`** — a two-way computed atom: `set` flows back to the sources.
+- **`derive.effect(($) => effect)`** — an *async* computed atom: reads atoms synchronously, returns an
+  Effect, suspends while it runs, refetches when a source changes, and carries the same loading obligation
+  `S` (and the effect's `E`/`R`) as `query`. Where `atom` and `query` meet.
+- **`atomFamily(make, keyOf?)`** — one lazily-created, memoised atom per key, for per-entity state, with
+  `forget` / `clear`.
+- **`batch(writes)`** — coalesce a burst of writes into a single notification wave: one re-render, not one
+  per write.
+- **`atom` / `derive` are server-safe** — exported from the `react-server` entry too, so a *universal*
+  service can hold reactive state and drive it on the server. Only the hooks that *read* an atom in a
+  component (`observe`, `useAtom`, `useAtomValue`, `useAtomSet`, `<Observe>`) stay client-only.
+
+### Fixed
+
+- **Infinite re-entrancy loop in the tracking computation.** A derived atom re-subscribed to its
+  dependencies on every value change; re-subscribing to the atom that was currently notifying mutated its
+  listener set mid-iteration — an infinite loop for a derived-of-derived chain. It now re-subscribes only
+  when the dependency *set* changes, and notifies over a snapshot. An untracked derived read also returns
+  an `Equal`-stable reference, so reading one through React's `useSyncExternalStore` can't spin.
+
 ## [0.4.0] — 2026-07-01
 
 **Typed errors and typed loading, rendered.** Two new capabilities turn Effect's error channel and a
