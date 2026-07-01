@@ -45,7 +45,8 @@ are genuine React hooks; the services come from an Effect `Context`. 100% real R
 - **`hook`** — bridge a real React hook into the `yield*` stream.
 - **`mount`** — render the tree under a runtime. Same call on the client and the server.
 
-That's it. (Signals — `atom` / `observe` — are an optional extra for precise reactivity.)
+That's it. (State lives in Effect too — the **atom toolkit** below keeps logic out of React, so
+components stay pure render.)
 
 > **Incremental, not a rewrite.** Plain React components stay ordinary `<Component />` JSX. You write a
 > **REC** with `rec(...)` _only_ where a component reaches for a service (or a hook bridged through Effect);
@@ -165,18 +166,58 @@ imported externally and resolved to **your app's single copy**. Three things kee
 - **De-duplication in the Vite plugin** (`@tmonier/effract-vite`) forces a single `react`, `react-dom`, and
   `effect` even if a transitive dependency pulls another, so you never ship React or Effect twice.
 
-## Reactivity
+## Reactivity — logic in Effect, React for render
 
-effract bridges Effect's reactive cell (`AtomRef`) to React with precise re-renders — no stray
-`Effect.runSync` at the call site. State can also live _inside a service_, reachable from anywhere an
-Effect runs, including the server.
+The point of effract: **state and the logic over it live in the Effect world; React only renders.** No
+`useState`, no derivation recomputed in a component, no `Effect.runSync` at the call site. An `atom` is a
+reactive cell held by a *service*; a component reads it by `yield*`ing it (read + precise subscribe) and
+mutates it by calling a service method. The state belongs to the runtime, so it's reachable from anywhere
+an Effect runs — other components, background fibers, the server.
 
 ```tsx
-const likes = atom(0);
-const doubled = observe(($) => $(likes) * 2); // re-renders only when an atom it read changes
-const [n, setN] = useAtom(likes); // the useState shape, backed by Effect
-<Observe>{($) => <b>{$(likes)}</b>}</Observe>; // inline in JSX
+class Cart extends Context.Service<Cart, {
+  readonly items: Atom<ReadonlyArray<Item>>;      // state
+  readonly total: ReadableAtom<number>;           // derived — computed here, not in a component
+  readonly add: (item: Item) => void;             // the only way to change it
+}>()('Cart') {}
+
+const CartLive = Layer.sync(Cart)(() => {
+  const items = atom<ReadonlyArray<Item>>([]);
+  const total = derive(($) => $(items).reduce((n, i) => n + i.price, 0));
+  return { items, total, add: (item) => items.update((xs) => [...xs, item]) };
+});
+
+const CartSummary = rec(function* () {
+  const cart = yield* Cart;
+  const total = yield* cart.total;                // read + subscribe — re-renders only when total changes
+  return <button onClick={() => cart.add(coffee)}>add · ${total}</button>;
+}); // no state, no logic — pure render + event
 ```
+
+**The atom toolkit** — derivation and state, expressed as data in the Effect world:
+
+| | |
+| --- | --- |
+| `atom(initial)` | a writable reactive cell (`.value` / `.set` / `.update`) |
+| `yield* atom` | read it in a REC — reads the value and subscribes this component |
+| `derive(($) => …)` | a **computed** atom; tracks exactly what it reads, recomputes on change, composes |
+| `derive.writable(read, write)` | a **two-way** computed atom — `set` flows back to the sources |
+| `derive.effect(($) => effect)` | an **async** computed atom — suspends while it runs, refetches on change, carries the `S` loading obligation |
+| `atomFamily(make)` | one memoised atom **per key** — per-entity state as a lookup |
+| `batch(writes)` | coalesce a burst of writes into **one** notification wave |
+
+And the React-side reads, for when a value is local to a component rather than owned by a service:
+
+```tsx
+const doubled = observe(($) => $(likes) * 2); // hook: re-renders only when an atom it read changes
+const [n, setN] = useAtom(likes);             // the useState shape, backed by Effect
+<Observe>{($) => <b>{$(likes)}</b>}</Observe>; // the same, inline in JSX
+```
+
+See recipes [05](./examples/src/05-stateful-service.tsx) (state + derived state in a service),
+[10](./examples/src/10-derived-state.tsx) (`derive` / `derive.writable`),
+[11](./examples/src/11-async-derived.tsx) (`derive.effect`), and
+[12](./examples/src/12-atom-collections.tsx) (`atomFamily` / `batch`).
 
 ## Typed errors
 
@@ -277,7 +318,7 @@ client islands you `mount`, and the type system enforces that line.
 
 ## Recipes & examples
 
-Nine typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
+Twelve typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
 in [`apps/`](./apps) — all rendering the **same shared components** to prove the abstraction holds:
 
 | App | Environment |

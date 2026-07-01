@@ -6,11 +6,14 @@
  *   02  hooks and services       (+ hook — the three primitives)
  *   03  async data via Suspense
  *   04  signals (atoms + observe)
- *   05  a stateful service
+ *   05  a stateful service (state + derived state, in the service)
  *   06  composing layers
  *   07  render a REC on the server — the same mount, the same import
  *   08  typed errors, rendered — exhaustive `.catch` over the error channel
  *   09  async data with `query` — loading obligation, refetch, cancellation
+ *   10  derived state — `derive` (computed) + `derive.writable` (two-way)
+ *   11  async derived state — `derive.effect` suspends and refetches
+ *   12  atom collections & batching — `atomFamily` + `batch`
  */
 export * as Service from './01-service.tsx';
 export * as HooksAndServices from './02-hooks-and-services.tsx';
@@ -21,3 +24,6 @@ export * as LayerComposition from './06-layer-composition.tsx';
 export * as Server from './07-server.tsx';
 export * as TypedErrors from './08-typed-errors.tsx';
 export * as QueryAndLoading from './09-query-and-loading.tsx';
+export * as DerivedState from './10-derived-state.tsx';
+export * as AsyncDerived from './11-async-derived.tsx';
+export * as AtomCollections from './12-atom-collections.tsx';
