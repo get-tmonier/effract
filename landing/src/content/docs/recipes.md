@@ -5,7 +5,7 @@ group: Advanced
 order: 1
 ---
 
-The repository ships twelve self-contained, typechecked **recipes** — one call-site pattern per file —
+The repository ships thirteen self-contained, typechecked **recipes** — one call-site pattern per file —
 and four **example apps** that render the same shared components across environments. The whole public
 API is three primitives — **`rec`**, **`hook`**, **`mount`** — and recipes 01–02 already use all three.
 

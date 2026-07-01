@@ -4,7 +4,7 @@ const en: SiteContent = {
   meta: {
     title: 'effract — write React components as Effect programs',
     description:
-      'Write React components as Effect programs. One component, one mount, running in a SPA, during SSR, or as a React Server Component — server vs client is just a runtime detail.',
+      'Write React components as Effect programs — state and logic in Effect services, React for render. One component, one mount, runs in a SPA, during SSR, or as a React Server Component.',
   },
   nav: {
     thesis: 'Thesis',
@@ -71,7 +71,8 @@ const en: SiteContent = {
     label: 'The idea',
     title: 'Logic in Effect, React for render',
     body: 'A React component should be [[almost dull]] — structure and interaction, nothing more. State, and the logic over it, live [[outside React]], in Effect services; the component reads a typed result with yield* and renders. No useState, no logic in the tree.',
-    caption: 'All the logic — state, derivation, mutation — in one service. The component only [[reads and renders]].',
+    caption:
+      'All the logic — state, derivation, mutation — in one service. The component only [[reads and renders]].',
     points: [
       {
         title: 'State and logic in services',
@@ -119,7 +120,7 @@ const en: SiteContent = {
   },
   cta: {
     title: 'Write it once. Run it anywhere a runtime does.',
-    body: 'MIT, on npm. Start with the docs, or the nine call-site recipes.',
+    body: 'MIT, on npm. Start with the docs, or the thirteen call-site recipes.',
     primary: 'Get started',
     secondary: 'View on GitHub',
   },

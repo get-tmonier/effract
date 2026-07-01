@@ -388,7 +388,7 @@ client islands you `mount`, and the type system enforces that line.
 
 ## Recipes & examples
 
-Twelve typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
+Thirteen typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
 in [`apps/`](./apps) — all rendering the **same shared components** to prove the abstraction holds:
 
 | App | Environment |

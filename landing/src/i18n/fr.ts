@@ -4,7 +4,7 @@ const fr: SiteContent = {
   meta: {
     title: 'effract — écrivez vos composants React comme des programmes Effect',
     description:
-      'Écrivez vos composants React comme des programmes Effect. Un composant, un seul mount, en SPA, en SSR ou comme React Server Component — serveur ou client n’est qu’un détail de runtime.',
+      'Écrivez vos composants React comme des programmes Effect — état et logique dans des services Effect, React pour le rendu. Un composant, un seul mount, en SPA, en SSR ou comme React Server Component.',
   },
   nav: {
     thesis: 'Thèse',
@@ -71,7 +71,8 @@ const fr: SiteContent = {
     label: 'L’idée',
     title: 'La logique dans Effect, React pour le rendu',
     body: 'Un composant React doit être [[presque banal]] — structure et interaction, rien de plus. L’état, et la logique qui va avec, vivent [[hors de React]], dans des services Effect ; le composant lit un résultat typé avec yield* et l’affiche. Pas de useState, pas de logique dans l’arbre.',
-    caption: 'Toute la logique — état, dérivation, mutation — dans un seul service. Le composant ne fait que [[lire et afficher]].',
+    caption:
+      'Toute la logique — état, dérivation, mutation — dans un seul service. Le composant ne fait que [[lire et afficher]].',
     points: [
       {
         title: 'L’état et la logique dans les services',
@@ -119,7 +120,7 @@ const fr: SiteContent = {
   },
   cta: {
     title: 'Écrivez-le une fois. Exécutez-le partout où tourne un runtime.',
-    body: 'MIT, sur npm. Commencez par la doc, ou les neuf recettes de call site.',
+    body: 'MIT, sur npm. Commencez par la doc, ou les treize recettes de call site.',
     primary: 'Commencer',
     secondary: 'Voir sur GitHub',
   },
