@@ -8,13 +8,13 @@
  */
 import type { ReactNode } from 'react';
 import { rec, mount } from '@tmonier/effract';
-import { AppLive, Counter, Likes, Todos } from '@effract/shared';
+import { AppLive, Progress, Likes, Todos } from '@effract/shared';
 
 /** Composes the shared client RECs into the island's grid. */
 const IslandView = rec(function* () {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {yield* Counter}
+      {yield* Progress}
       {yield* Likes}
       {yield* Todos}
     </div>
