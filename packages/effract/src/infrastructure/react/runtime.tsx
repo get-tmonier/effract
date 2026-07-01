@@ -56,8 +56,32 @@ export function Runtime<ROut, E>({ layer, children }: RuntimeProps<ROut, E>): Re
     [runtime],
   );
 
-  // Tear the runtime down (close scopes, finalize layers) when the boundary unmounts.
-  useEffect(() => () => void runtime.dispose(), [runtime]);
+  // Tear the runtime down (close scopes, finalize layers) when the boundary is
+  // *truly* gone — but survive React's StrictMode/offscreen remount, where a
+  // passive effect is torn down and immediately set up again in the same tick.
+  // Disposing eagerly in cleanup would finalize the runtime (release scoped
+  // resources, close layers) out from under a component that is still mounted,
+  // leaving every later `yield*` running against a dead runtime. So we *defer*
+  // disposal to a microtask and cancel it if the effect is set up again first:
+  // on a real unmount nothing re-arms `alive`, so the runtime is disposed; on a
+  // StrictMode/offscreen remount the re-setup flips it back and disposal is a
+  // no-op. `alive` lives in a ref so both closures see the same latch.
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      queueMicrotask(() => {
+        if (!alive.current) {
+          void runtime.dispose();
+          // Allow a future render of this same boundary to build a fresh one.
+          if (runtimeRef.current === runtime) {
+            runtimeRef.current = null;
+          }
+        }
+      });
+    };
+  }, [runtime]);
 
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>;
 }
