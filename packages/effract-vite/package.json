@@ -1,6 +1,6 @@
 {
   "name": "@tmonier/effract-vite",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "One-import Vite plugin for effract: React Fast Refresh plus Effect/React de-duplication.",
   "keywords": [
     "effect",
