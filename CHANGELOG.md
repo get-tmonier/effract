@@ -6,6 +6,50 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+**The public API is now three primitives — `rec`, `hook`, `mount`** (plus optional signals). One
+import, one boundary. `mount(layer, Root)` from `@tmonier/effract` renders on the client **and** the
+server; the client/server split becomes an implementation detail the bundler resolves, not something you
+type. This release has breaking changes — a `0.3.0`-worthy consolidation.
+
+### Changed
+
+- **`mount` renders on the server, too.** `@tmonier/effract` ships two conditional entries: the
+  `react-server` export condition selects a server `mount` (drives the REC against an Effect runtime,
+  returns an async React Server Component, no client JS), and the `default` condition selects the client
+  `mount`. Same import, same signature, the same compile-time check that the layer provides the tree's
+  services — you never choose client vs server. Move a component between them by moving which file
+  `mount`s it; the component and the call are identical.
+- A `rec(...)` value is now **server-safe**: a service-only REC is a single value the same `mount`
+  renders on the client and on the server — no separate "body" or server form to keep in sync. Child
+  placement (`yield* Child`) is a first-class yield the renderer resolves, so the descriptor never bakes
+  in a client component, and a universal REC composed of universal RECs drives its children inline on the
+  server (no client JS).
+- **The hook rule is enforced at build time.** `hook`, `observe`, and `atom` are no longer exported from
+  the server entry (they are client-only). Reaching for one in a Server Component is now a hard compile
+  error (_"`hook` is not exported from `@tmonier/effract`"_), because that module resolves the
+  `react-server` entry where those APIs do not exist — not a runtime surprise.
+
+### Removed
+
+- **Breaking: the `@tmonier/effract-rsc` package.** Its server rendering folded into `@tmonier/effract`
+  as the `react-server` `mount`. `serve`, `serverComponent`, `serverView`, `provideRuntime`,
+  `currentRuntime`, and the `AsyncLocalStorage` runtime scope are all gone — `mount` replaces them.
+- **Breaking: the Flight/Web-Worker renderer** (`renderToFlightStream`, `serveFlight`, …) and its
+  `react-server-dom-webpack` peer dependency. The common RSC path (Next.js, TanStack Start) needs none of
+  it — the framework owns the Flight wire and `mount` just produces a node. `@tmonier/effract`'s only
+  peers are now `react` and `effect`. `driveServerRec` remains (server entry) as the low-level driver for
+  a fully custom pipeline or a per-request runtime.
+- **Breaking: `view`.** It was pure sugar over `rec` (a single-yield body). Use `rec` — a hook-free
+  `rec` is the resolve-up-front / RSC-friendly shape. This keeps the public surface to three primitives.
+
+### Migration
+
+- `import … from '@tmonier/effract-rsc'` → `import { mount } from '@tmonier/effract'`.
+- `serve(layer, Root)` / `serverComponent(body)` → `mount(layer, Root)` (a REC; `export default` it or
+  place it as `<Root />`).
+- `view(effect)` → `rec(function* () { return yield* effect })`.
+- Remove `@tmonier/effract-rsc` and `react-server-dom-webpack` from your dependencies.
+
 ## [0.2.1] — 2026-06-25
 
 ### Changed

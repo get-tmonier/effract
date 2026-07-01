@@ -31,7 +31,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           echo "Releasing $VERSION"
-          for dir in packages/effract packages/effract-rsc packages/effract-vite; do
+          for dir in packages/effract packages/effract-vite; do
             ( cd "$dir" && npm pkg set version="$VERSION" )
           done
 

@@ -6,7 +6,6 @@
   "type": "module",
   "dependencies": {
     "@tmonier/effract": "workspace:*",
-    "@tmonier/effract-rsc": "workspace:*",
     "effect": "catalog:",
     "react": "catalog:"
   },

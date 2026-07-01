@@ -5,7 +5,7 @@
  * plain fakes.
  */
 import type * as Exit from 'effect/Exit';
-import type { AnyEffect } from '#domain/protocol.ts';
+import type { AnyEffect, RecPlacement } from '#domain/protocol.ts';
 
 /**
  * Something that can run an Effect. Backed in production by a `ManagedRuntime`
@@ -40,8 +40,22 @@ interface AsyncSlot {
  */
 export type RenderCache = Map<number, AsyncSlot>;
 
+/**
+ * Turns a child-REC placement into a rendered node. Injected because *how* a
+ * child is placed is renderer-specific — on the client it becomes a real React
+ * child fiber (`createElement`); the interpreter itself must stay React-free, so
+ * it types the child's node as `unknown` and feeds the result straight back into
+ * the generator. `place` is a *method* deliberately: its parameter is bivariant,
+ * so the concrete renderer can declare the node type it actually produces (e.g.
+ * `ReactNode`) without the interpreter — or the renderer — needing a cast.
+ */
+export interface Placer {
+  place(placement: RecPlacement<unknown, unknown>): unknown;
+}
+
 export interface InterpreterDeps {
   readonly executor: Executor;
   readonly suspender: Suspender;
   readonly cache: RenderCache;
+  readonly placer: Placer;
 }

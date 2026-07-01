@@ -7,8 +7,8 @@ order: 1
 
 **effract** lets you write React components as Effect programs. A component body is a generator
 that effract interprets _inside React's render pass_, so it can `yield*` both Effect services and
-real React hooks. The same component then runs in a SPA, on a server, in a Web Worker, or as a
-React Server Component.
+real React hooks. The same component then runs in a SPA, during SSR, or as a React Server
+Component — the same `mount`, the same import, wherever it renders.
 
 ## Install
 
@@ -16,8 +16,8 @@ React Server Component.
 npm i @tmonier/effract
 ```
 
-> effract requires **React 19.2+** and **Effect v4** (installed automatically as peers). For the RSC
-> renderer, also add `@tmonier/effract-rsc`.
+> effract requires **React 19.2+** and **Effect v4** (installed automatically as peers). One package
+> covers everything — client, SSR, and React Server Components all come from `@tmonier/effract`.
 
 ## Incremental — not a rewrite
 
@@ -80,6 +80,6 @@ then resolved synchronously inside `Counter`.
 
 - [The thesis](/docs/the-thesis/) — how Effect and React fibers reconcile.
 - [The runtime](/docs/runtime/) — services, layers, and wiring it in with `mount`.
-- [Components](/docs/components/) — `component`, `view`, and `hook`.
+- [Components](/docs/components/) — `rec` and `hook`.
 - [Signals](/docs/signals/) — `observe`, `atom`, and precise reactivity.
-- [Server Components](/docs/server-components/) — drive RECs as RSC and stream Flight.
+- [Client & server](/docs/client-and-server/) — one `mount`, interactive or on the server, no client JS.

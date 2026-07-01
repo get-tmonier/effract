@@ -17,7 +17,7 @@
 import * as Cause from 'effect/Cause';
 import * as Effect from 'effect/Effect';
 import * as Exit from 'effect/Exit';
-import { isHook, type AnyEffect, type RecGenerator } from '#domain/protocol.ts';
+import { isHook, isPlacement, type AnyEffect, type RecGenerator } from '#domain/protocol.ts';
 import type { InterpreterDeps } from '#application/ports.ts';
 
 interface DriveState {
@@ -32,11 +32,7 @@ interface DriveState {
  * retry after the promise settles returns the value inline. Any other failure
  * is a real error and is thrown to the nearest React error boundary.
  */
-export const resolveEffect = (
-  effect: AnyEffect,
-  deps: InterpreterDeps,
-  state: DriveState,
-): unknown => {
+const resolveEffect = (effect: AnyEffect, deps: InterpreterDeps, state: DriveState): unknown => {
   if (!Effect.isEffect(effect)) {
     throw new TypeError(
       'effract: a component body yielded a value that is neither an Effect nor a hook(...). ' +
@@ -75,9 +71,16 @@ export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
   let step = gen.next();
   while (!step.done) {
     const instruction = step.value;
-    const result = isHook(instruction)
-      ? instruction.value
-      : resolveEffect(instruction, deps, state);
+    let result: unknown;
+    if (isHook(instruction)) {
+      // The hook already ran inline during render; unwrap its value.
+      result = instruction.value;
+    } else if (isPlacement(instruction)) {
+      // A child REC: hand it to the renderer to place as a real React child.
+      result = deps.placer.place(instruction);
+    } else {
+      result = resolveEffect(instruction, deps, state);
+    }
     step = gen.next(result);
   }
   return step.value;

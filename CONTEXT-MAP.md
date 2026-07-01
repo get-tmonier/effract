@@ -2,33 +2,37 @@
 
 ## Packages
 
-- [`@tmonier/effract`](./packages/effract) — the core. The yield protocol, the in-render interpreter, the
-  `<Runtime>` boundary, and the signals bridge.
-- [`@tmonier/effract-rsc`](./packages/effract-rsc) — the server side. Drives REC bodies as async React
-  Server Components and streams Flight; includes a Web Worker variant.
+- [`@tmonier/effract`](./packages/effract) — everything. The yield protocol, the in-render interpreter,
+  the `Runtime` boundary, the signals bridge, **and** the server renderer. It ships two conditional
+  entries: `index.client.ts` (the `default` condition — the client `mount`) and `index.server.ts` (the
+  `react-server` condition — the server `mount`, driving RECs as async Server Components). Same import,
+  the bundler picks the implementation.
 - [`@tmonier/effract-vite`](./packages/effract-vite) — a thin Vite plugin (React Fast Refresh + de-dup).
 
 ## Shared concept
 
-The **React Effect Component (REC)** — a component body written as a generator. Its *body* is the unit of
-sharing: the same body is interpreted in-render on the client by `@tmonier/effract` and awaited on the
-server by `@tmonier/effract-rsc`.
+The **React Effect Component (REC)** — a component body written as a generator. A `rec(...)` value is
+the unit of sharing: a service-only REC is *one value*, interpreted in-render on the client and driven
+on the server — the very same `mount(layer, Root)` renders it in both places, with no separate body or
+server form to keep in sync.
 
 ## Relationships
 
-- **effract-rsc → effract**: the RSC driver imports the protocol (`hook`, `isHook`, REC types) from the
-  core's public entry; it re-resolves the same yields against a per-request runtime.
+- **client vs server**: `mount` has two implementations in one package — `#infrastructure/react/rec.tsx`
+  (client, `'use client'`, in-render interpreter) and `#infrastructure/server/mount.ts` (server, drives
+  via `#application/server-driver.ts`). The `react-server` export condition selects between them, so a
+  server module and a client module import the identical `mount`.
 - **effract-vite → (vite, react)**: pure tooling; it knows nothing about the runtime.
-- **apps/shared → effract, effract-rsc**: defines the services, the composed `AppLive` layer, and the
-  components every example renders. Server-safe REC bodies live in `bodies.tsx`; client components in
-  `recs.tsx`.
+- **apps/shared → effract**: defines the services, the composed `AppLive` layer, and the components every
+  example renders. Universal (service-only) RECs live in `universal.tsx` — the same values `page.tsx`
+  `mount`s on the server; hook-bearing client RECs live in `recs.tsx`.
 
 ## Layering (inside each package)
 
 ```
 domain/           pure protocol + types — Effect vocabulary, never React
-application/      the interpreter + ports — React-free, capabilities injected
-infrastructure/   adapters — the React binding, the Flight renderer, the worker
+application/      the interpreter + the server driver — React-free, capabilities injected
+infrastructure/   adapters — the client React binding, the server mount
 ```
 
-Enforced by dependency-cruiser; the only composition seams are `index.ts` and the subpath entries.
+Enforced by dependency-cruiser; the only composition seams are the `index.*` entries.

@@ -5,7 +5,7 @@
  * `ManagedRuntime` once from a `Layer` and hands it down through React context,
  * where every effract component reads it. This is the seam where "server vs
  * client" lives: provide a browser layer and the same components run in a SPA;
- * provide a server layer and they run under Node, Bun, or a Web Worker — the
+ * provide a server layer and they run under Node or Bun — the
  * components never change. Use `mount(layer, Root)`; `Runtime` is the low-level
  * provider underneath it.
  *

@@ -4,8 +4,8 @@
 
 <p align="center">
   <strong>Write React components as Effect programs.</strong><br/>
-  The same component runs in a SPA, on a server, in a Web Worker, or as a React Server Component —<br/>
-  <em>"server vs client" becomes an Effect runtime detail, not an architectural fork.</em>
+  The same component — and the same <code>mount</code> — runs in a SPA, during SSR, or as a React Server Component —<br/>
+  <em>"server vs client" becomes an implementation detail the bundler resolves, not something you type.</em>
 </p>
 
 <p align="center">
@@ -35,6 +35,14 @@ createRoot(el).render(mount(AppLive, Counter)); // missing service → compile e
 One body, two languages, a single stream of `yield*` — interpreted **inside React's render pass**. The hooks
 are genuine React hooks; the services come from an Effect `Context`. 100% real React, no forked reconciler.
 
+**The whole public API is three primitives** — everything above is already all of them:
+
+- **`rec`** — write a component as an Effect program.
+- **`hook`** — bridge a real React hook into the `yield*` stream.
+- **`mount`** — render the tree under a runtime. Same call on the client and the server.
+
+That's it. (Signals — `atom` / `observe` — are an optional extra for precise reactivity.)
+
 > **Incremental, not a rewrite.** Plain React components stay ordinary `<Component />` JSX. You write a
 > **REC** with `rec(...)` _only_ where a component reaches for a service (or a hook bridged through Effect);
 > the two compose freely in the same tree.
@@ -55,26 +63,57 @@ A REC is **not** a JSX element — `<Counter />` is a compile error. You _place_
 `{yield* Counter}`, or `{yield* Greet.with({ name: 'Ada' })}` for props. Plain components sit right
 alongside: `<Card>{yield* Counter}</Card>`.
 
-## One component, every runtime
+## One component, one `mount`, every runtime
 
-The boundary isn't "server vs client" — it's **which Effect runtime renders the component**:
+There is **one boundary and one import** — `mount(layer, Root)` from `@tmonier/effract`. You write a
+component once with `rec(...)`; you `mount` it the same way everywhere:
 
 ```tsx
-mount(BrowserLive, Dashboard)                        // SPA
-mount(ServerLive, Dashboard)                         // Bun / Node streaming SSR
-renderToFlightStream(<DashboardRSC />, { runtime })  // React Server Component (Flight)
+import { mount } from '@tmonier/effract'; // ← the same import in every file
+
+mount(BrowserLive, Dashboard) // SPA
+mount(ServerLive, Dashboard)  // Bun / Node streaming SSR + hydration
+mount(ServerLive, Page)       // React Server Component — same call, no client JS
 ```
 
-`mount` also checks **at compile time** that the layer provides every service the tree needs — a missing
-one is a type error that names it.
+"Server vs client" is never something you type. In a React Server Component graph the bundler's
+`react-server` export condition hands `mount` a server implementation (it drives the tree on the server,
+no client JS); everywhere else it renders interactively. Same name, same signature, same compile-time
+check that the layer provides every service the tree needs — the runtime, and the client/server split
+itself, are an implementation detail.
+
+### Moving a component from client to server
+
+You don't rewrite anything — you move where it's `mount`ed. A service-only REC that ran as a client
+island:
+
+```tsx
+// island.tsx  ('use client')  → interactive, ships JS
+'use client';
+import { mount } from '@tmonier/effract';
+export const Badge = () => mount(AppLive, StatsBadge);
+```
+
+becomes a zero-JS server component by `mount`ing it from a server module instead — **the component and
+the call are identical**:
+
+```tsx
+// page.tsx  (a React Server Component)  → resolved on the server, no JS
+import { mount } from '@tmonier/effract';
+export default mount(AppLive, StatsBadge);
+```
+
+The only thing that changed is the file it lives in. (A REC that uses a React `hook` stays a client
+island — RSC has no hooks — and that's the one honest line the type system keeps for you.)
 
 ## Install
 
 ```sh
-npm i @tmonier/effract        # add @tmonier/effract-rsc for the React Server Components renderer
+npm i @tmonier/effract
 ```
 
-Requires **React 19+** and **Effect v4** — both as peer dependencies (see [Bundle size](#bundle-size)).
+One package. Its only peers are **React 19+** and **Effect v4** — nothing else, no bundler-specific
+Flight runtime (see [Bundle size](#bundle-size)).
 
 ```tsx
 import { mount, rec, hook } from '@tmonier/effract';
@@ -104,8 +143,7 @@ effract is tiny, and it never doubles your dependencies.
 
 | Package | Your bundle gains (min+gzip) |
 | --- | --- |
-| `@tmonier/effract` (core) | **~4.7 KB** |
-| `@tmonier/effract-rsc` | ~1.5 KB (server only) |
+| `@tmonier/effract` (core, client + server) | **~5 KB** |
 | `@tmonier/effract-vite` | 0 (build-time plugin) |
 
 That's effract's own code only. **React and Effect are never bundled** — they're `peerDependencies`, imported
@@ -132,19 +170,32 @@ const [n, setN] = useAtom(likes); // the useState shape, backed by Effect
 
 ## React Server Components
 
-`@tmonier/effract-rsc` drives the same REC bodies on the server and streams standard Flight (plus a
-**Web Worker** variant, `@tmonier/effract-rsc/worker`, that renders off the main thread):
+No extra package, no new API. In a framework that owns the RSC pipeline (Next.js, TanStack Start), you
+`mount` a REC from a server module and it renders on the server — the bundler's `react-server` condition
+selects a server `mount` for you:
 
 ```tsx
-import { serverComponent, renderToFlightStream } from '@tmonier/effract-rsc';
+import { rec, mount } from '@tmonier/effract'; // same import as the client
 
-const Header = serverComponent(statsBadge); // a service-only body — no hooks
-const stream = renderToFlightStream(<Header />, { runtime }); // → text/x-component
+const StatsBadge = rec(function* () {
+  const stats = yield* Stats; // resolved on the server — no client JS
+  return <span>{stats.online} online</span>;
+});
+
+// The page is a REC; compose children with yield*, wire the runtime once.
+const Page = rec(function* () {
+  return <main>{yield* StatsBadge}</main>;
+});
+
+export default mount(AppLive, Page); // the very same call a client root makes
 ```
+
+Only service-only (hook-free) RECs can be Server Components — RSC has no hooks; hook-bearing RECs stay
+client islands you `mount`, and the type system enforces that line.
 
 ## Recipes & examples
 
-Eight typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
+Seven typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
 in [`apps/`](./apps) — all rendering the **same shared components** to prove the abstraction holds:
 
 | App | Environment |
@@ -160,8 +211,7 @@ Run one with `just example <name>`.
 
 | Package | What it is |
 | --- | --- |
-| [`@tmonier/effract`](./packages/effract) | the core: `rec`, `view`, `hook`, `mount`, signals |
-| [`@tmonier/effract-rsc`](./packages/effract-rsc) | Flight server renderer + Web Worker variant |
+| [`@tmonier/effract`](./packages/effract) | everything: `rec`, `hook`, `mount` (client **and** server), signals |
 | [`@tmonier/effract-vite`](./packages/effract-vite) | a one-import Vite plugin |
 
 The design and its tradeoffs are written up in
