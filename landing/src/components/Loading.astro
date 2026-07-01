@@ -12,11 +12,10 @@ const code = `// query: async data as a typed dependency
 const Profile = rec(function* () {
   const user = yield* query(fetchUser(id), id)
   return <Card user={user}/>
-})
-//  Profile: REC<…, Suspends>  ← must handle loading
+}).suspense(<Spinner/>)   // ← loading, handled here
 
-mount(App, Profile)                       // ✗ won't compile
-mount(App, Profile.suspense(<Spinner/>))  // ✓ handled`;
+// forget it and Profile stays REC<…, Suspends> —
+// mount won't compile until the loading is handled`;
 ---
 
 <section id="loading" class="relative mx-auto max-w-6xl px-5 py-14 sm:py-20 lg:py-24">
