@@ -5,9 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>effract playground</title>
   </head>
-  <body style="font: 15px/1.6 system-ui, sans-serif; margin: 3rem">
-    <h1 style="font-weight: 700">effract playground</h1>
-    <p style="color: #666">A React Effect Component: a service and a real React hook in one body.</p>
+  <body style="font: 15px/1.6 system-ui, sans-serif; margin: 3rem; color: #0f172a">
+    <h1 style="font-weight: 700; margin-bottom: 0.25rem">effract playground</h1>
+    <p style="color: #64748b; margin-top: 0; max-width: 36rem">
+      A tiny shop — <b>logic in Effect, React for render</b>. All state lives in services: the
+      <b>cart</b> (items, quantity, a <b>derived</b> total) is mutated in the product view and read by
+      the header badge with no props between them; the <b>route</b> is a service atom, not
+      <code>useState</code>. Products are <b>fetched</b> (<code>query</code>) with
+      <code>.suspense</code> loading; a lookup can <b>fail in typed ways</b> (<code>.catch</code>) —
+      <b>#3</b> is sold out, <b>#9</b> doesn't exist. Components only <code>yield*</code> and render.
+    </p>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,112 +1,108 @@
-import type { CSSProperties } from 'react';
-import * as Context from 'effect/Context';
-import * as Effect from 'effect/Effect';
-import * as Layer from 'effect/Layer';
-import { atom, batch, rec } from '@tmonier/effract';
+import type { ReactNode } from 'react';
+import { mount, query, rec } from '@tmonier/effract';
+import { AppLive, Cart, Catalog, Route } from './services';
 
-/**
- * effract — logic in Effect, React for render.
- *
- * Everything below the line is UI: components that only `yield*` service state and
- * render it. There is no `useState` and no logic in a component. All of it — the
- * items, the derived totals, the mutations — lives in the `Cart` service, an
- * ordinary Effect value you could test, share, or run on the server unchanged.
- */
+const btn =
+  'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[13px] font-semibold ' +
+  'transition-colors hover:bg-slate-50 disabled:cursor-default cursor-pointer';
+const btnDark = 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800';
 
-// ── The logic: a stateful service ────────────────────────────────────────────
+// Plain React — the frame. Nothing here holds state or logic; it's pure render.
+const Card = ({ children }: { children: ReactNode }): ReactNode => (
+  <div className="min-w-[340px] rounded-2xl border border-slate-200 p-6 shadow-xl shadow-slate-900/10">
+    {children}
+  </div>
+);
 
-interface Item {
-  readonly name: string;
-  readonly price: number;
-}
-
-const MENU: ReadonlyArray<Item> = [
-  { name: '☕ espresso', price: 3 },
-  { name: '🥐 croissant', price: 4 },
-  { name: '🍵 matcha', price: 5 },
-];
-
-// The shape is inferred from `make`; the Live layer is `Cart.layer`.
-export class Cart extends Context.Service<Cart>()('demo/Cart', {
-  make: Effect.sync(() => {
-    const items = atom<ReadonlyArray<Item>>([]);
-    const count = items.derive((list) => list.length); // derived
-    const total = items.derive((list) => list.reduce((sum, item) => sum + item.price, 0)); // derived
-    return {
-      items,
-      count,
-      total,
-      add: (item: Item) => items.update((xs) => [...xs, item]),
-      // Adds three items but notifies subscribers once — one re-render, not three.
-      addRound: () =>
-        batch(() => {
-          for (const item of MENU) {
-            items.update((xs) => [...xs, item]);
-          }
-        }),
-      clear: () => items.set([]),
-    };
-  }),
-}) {
-  static readonly layer = Layer.effect(Cart, Cart.make);
-}
-
-// ── The UI: pure render + events, no state, no logic ─────────────────────────
-
-const button: CSSProperties = {
-  font: '600 14px system-ui',
-  padding: '8px 12px',
-  marginRight: 8,
-  borderRadius: 8,
-  border: '1px solid #d4d4d8',
-  background: '#fff',
-  cursor: 'pointer',
-};
-
-const Menu = rec(function* () {
+// The header badge reads the cart — mutated over in the product view, a different
+// subtree, with no prop passed here. It reads `total`, which the service *derives*
+// from `items`; the component sums nothing. `yield*` reads + subscribes, so the
+// badge re-renders precisely when the cart changes.
+const CartBadge = rec(function* () {
   const cart = yield* Cart;
+  const items = yield* cart.items;
+  const total = yield* cart.total; // the derived atom
   return (
-    <div>
-      {MENU.map((item) => (
-        <button key={item.name} type="button" style={button} onClick={() => cart.add(item)}>
-          {item.name} · ${item.price}
+    <span className="text-sm text-slate-500">
+      🛒 {items.length} · ${total}
+    </span>
+  );
+});
+
+// The nav reads the current route with `yield*` and writes it back through a
+// service method. No React state.
+const Nav = rec(function* () {
+  const route = yield* Route;
+  const id = yield* route.productId;
+  return (
+    <div className="my-3.5 flex gap-1.5">
+      {[1, 2, 3, 9].map((n) => (
+        <button
+          key={n}
+          onClick={() => route.open(n)}
+          disabled={n === id}
+          className={`${btn} ${n === id ? btnDark : ''}`}
+        >
+          {n === 9 ? 'missing' : `#${n}`}
         </button>
       ))}
     </div>
   );
 });
 
-const Summary = rec(function* () {
+// The product view reads the selected id and the pending quantity from services,
+// fetches that product (async → suspends), and dispatches to service methods.
+// Because the fetch is typed to fail with `NotFound | SoldOut`, it *must* render a
+// fallback for each — checked at compile time. No React state anywhere: the
+// quantity lives in the cart service, so the component is pure render + events.
+const ProductView = rec(function* () {
+  const route = yield* Route;
   const cart = yield* Cart;
-  const count = yield* cart.count; // reactive read of a derived atom — re-renders precisely
-  const total = yield* cart.total;
+  const catalog = yield* Catalog;
+  const id = yield* route.productId; // read + subscribe — refetch below re-keys on change
+  const product = yield* query(catalog.product(id), id); // refetch when the route changes
+  const qty = yield* cart.qty;
   return (
-    <div style={{ marginTop: 20 }}>
-      <strong style={{ fontSize: 18 }}>
-        {count} item{count === 1 ? '' : 's'} · ${total}
-      </strong>
-      <div style={{ marginTop: 12 }}>
-        <button type="button" style={button} onClick={() => cart.addRound()}>
-          add a round (batch)
+    <div>
+      <p className="text-lg">
+        <strong>{product.name}</strong> — ${product.price}
+      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <button className={btn} onClick={() => cart.dec()}>
+          −
         </button>
-        <button type="button" style={button} onClick={() => cart.clear()}>
-          clear
+        <span className="w-4 text-center tabular-nums">{qty}</span>
+        <button className={btn} onClick={() => cart.inc()}>
+          +
+        </button>
+        <button className={`${btn} ${btnDark} ml-1`} onClick={() => cart.add(product)}>
+          add {qty} to cart
         </button>
       </div>
     </div>
   );
-});
+})
+  .catch({
+    NotFound: (e) => <p className="text-red-700">No product #{e.id}.</p>,
+    SoldOut: (e) => <p className="text-red-700">{e.name} is sold out.</p>,
+  })
+  .suspense(<p className="text-slate-400">loading…</p>);
 
-export const App = rec(function* () {
+// A props-free page composes the pieces with `yield*`. Its loading obligation is
+// already discharged (ProductView is `.suspense`d), so `mount` needs no `{ loading }`.
+const Page = rec(function* () {
   return (
-    <main style={{ font: '15px system-ui', color: '#18181b', padding: 24, maxWidth: 560 }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>effract</h1>
-      <p style={{ color: '#71717a', margin: '0 0 20px' }}>
-        Logic in Effect, React for render — all state lives in the <code>Cart</code> service; the
-        components only <code>yield*</code> and render.
-      </p>
-      {yield* Menu}
-      {yield* Summary}
-    </main>
+    <Card>
+      <div className="flex items-baseline justify-between">
+        <strong className="text-[15px]">☕ effract coffee</strong>
+        {yield* CartBadge}
+      </div>
+      {yield* Nav}
+      {yield* ProductView}
+    </Card>
   );
 });
+
+// One boundary — `mount` supplies the runtime and checks, at compile time, that
+// `AppLive` provides every service the tree needs.
+export const App = mount(AppLive, Page);
