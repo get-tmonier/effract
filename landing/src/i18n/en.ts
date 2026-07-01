@@ -40,7 +40,7 @@ const en: SiteContent = {
       { write: 'yield* Stats', does: 'a service, resolved synchronously' },
       { write: 'yield* hook(useState(0))', does: 'a real React hook, stable order' },
       { write: 'yield* fetchUser', does: 'suspends, then resumes inline' },
-      { write: 'a failure', does: 'throws to the nearest boundary' },
+      { write: 'a typed failure', does: 'renders a .catch fallback' },
     ],
   },
   everywhere: {
@@ -54,6 +54,12 @@ const en: SiteContent = {
       { name: 'RSC', desc: 'Next.js, no client JS' },
     ],
     caption: 'The same RECs in all four — proven by the example apps.',
+  },
+  typedErrors: {
+    label: 'Typed errors',
+    title: 'Every failure has a face',
+    body: 'A REC’s failures ride in its type. [[.catch turns them into UI]] — one fallback per error tag, checked exhaustively. No try/catch, no error instanceof, no untyped boundary. Sync or async, on the client or the server.',
+    caption: 'Forget a case and it [[won’t compile]] — the error channel keeps you honest.',
   },
   philosophy: {
     label: 'Philosophy',
@@ -114,7 +120,7 @@ const en: SiteContent = {
   },
   cta: {
     title: 'Write it once. Run it anywhere a runtime does.',
-    body: 'MIT, on npm. Start with the docs, or the seven call-site recipes.',
+    body: 'MIT, on npm. Start with the docs, or the eight call-site recipes.',
     primary: 'Get started',
     secondary: 'View on GitHub',
   },
