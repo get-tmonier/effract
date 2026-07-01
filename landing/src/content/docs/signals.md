@@ -16,22 +16,21 @@ Put reactive state — an `atom` — _inside a service_, so it is reachable from
 expose methods that mutate it. The component only reads and renders.
 
 ```tsx
-import { atom, derive, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom, rec } from '@tmonier/effract';
+import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
+import * as Layer from 'effect/Layer';
 
-class Cart extends Context.Service<
-  Cart,
-  {
-    readonly items: Atom<ReadonlyArray<Item>>; // state
-    readonly total: ReadableAtom<number>; // derived — computed here, once
-    readonly add: (item: Item) => void;
-  }
->()('app/Cart') {}
-
-const CartLive = Layer.sync(Cart)(() => {
-  const items = atom<ReadonlyArray<Item>>([]);
-  const total = items.derive((list) => list.reduce((n, i) => n + i.price, 0));
-  return { items, total, add: (item) => items.update((xs) => [...xs, item]) };
-});
+// The service shape is inferred from `make`; the Live layer is a `static`.
+class Cart extends Context.Service<Cart>()('app/Cart', {
+  make: Effect.sync(() => {
+    const items = atom<ReadonlyArray<Item>>([]);
+    const total = items.derive((list) => list.reduce((n, i) => n + i.price, 0)); // derived
+    return { items, total, add: (item: Item) => items.update((xs) => [...xs, item]) };
+  }),
+}) {
+  static readonly layer = Layer.effect(Cart, Cart.make);
+}
 
 const CartSummary = rec(function* () {
   const cart = yield* Cart;

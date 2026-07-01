@@ -12,7 +12,7 @@ import * as Context from 'effect/Context';
 import * as Duration from 'effect/Duration';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { atom, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom } from '@tmonier/effract';
 
 // --- Config: app constants, and a dependency of Greeter -----------------------
 
@@ -63,67 +63,59 @@ export interface Todo {
   readonly done: boolean;
 }
 
-export class Store extends Context.Service<
-  Store,
-  {
-    readonly likes: Atom<number>;
-    readonly todos: Atom<ReadonlyArray<Todo>>;
-    readonly draft: Atom<string>; // the input value is state too — it lives here, not in useState
-    readonly remaining: ReadableAtom<number>; // derived — computed in the service, not a component
-    readonly like: () => void;
-    readonly addTodo: (text: string) => void;
-    readonly toggleTodo: (id: number) => void;
-    readonly setDraft: (text: string) => void;
-    readonly submitDraft: () => void;
-  }
->()('shared/Store') {}
-
-export const StoreLive: Layer.Layer<Store> = Layer.sync(Store)(() => {
-  const likes = atom(0);
-  const todos = atom<ReadonlyArray<Todo>>([
-    { id: 1, text: 'Read a service with yield*', done: true },
-    { id: 2, text: 'Keep all state in the service', done: true },
-    { id: 3, text: 'Run the same component on the server', done: false },
-  ]);
-  const draft = atom('');
-  const remaining = todos.derive((list) => list.filter((todo) => !todo.done).length);
-  let nextId = 4;
-  const addTodo = (text: string): void => {
-    const id = nextId;
-    nextId += 1;
-    todos.update((list) => [...list, { id, text, done: false }]);
-  };
-  return {
-    likes,
-    todos,
-    draft,
-    remaining,
-    like: () => {
-      likes.update((n) => n + 1);
-    },
-    addTodo,
-    toggleTodo: (id) => {
-      todos.update((list) => list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-    },
-    setDraft: (text) => {
-      draft.set(text);
-    },
-    // Read + write atoms straight from the runtime — no component involved.
-    submitDraft: () => {
-      const text = draft.value.trim();
-      if (text.length > 0) {
-        addTodo(text);
-        draft.set('');
-      }
-    },
-  };
-});
+// The shape is inferred from `make`; the Live layer is a `static`. `make` is an
+// Effect (here sync), so a service that needs *other* services would `Effect.gen`
+// and `yield*` them, then `Layer.provide` on the layer — exactly like `Greeter`.
+export class Store extends Context.Service<Store>()('shared/Store', {
+  make: Effect.sync(() => {
+    const likes = atom(0);
+    const todos = atom<ReadonlyArray<Todo>>([
+      { id: 1, text: 'Read a service with yield*', done: true },
+      { id: 2, text: 'Keep all state in the service', done: true },
+      { id: 3, text: 'Run the same component on the server', done: false },
+    ]);
+    const draft = atom('');
+    const remaining = todos.derive((list) => list.filter((todo) => !todo.done).length); // derived
+    let nextId = 4;
+    const addTodo = (text: string): void => {
+      const id = nextId;
+      nextId += 1;
+      todos.update((list) => [...list, { id, text, done: false }]);
+    };
+    return {
+      likes,
+      todos,
+      draft,
+      remaining,
+      like: (): void => {
+        likes.update((n) => n + 1);
+      },
+      addTodo,
+      toggleTodo: (id: number): void => {
+        todos.update((list) => list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+      },
+      setDraft: (text: string): void => {
+        draft.set(text);
+      },
+      // Read + write atoms straight from the runtime — no component involved.
+      submitDraft: (): void => {
+        const text = draft.value.trim();
+        if (text.length > 0) {
+          addTodo(text);
+          draft.set('');
+        }
+      },
+    };
+  }),
+}) {
+  static readonly layer = Layer.effect(Store, Store.make);
+}
 
 // --- AppLive: the composition. Greeter receives Config; everything is merged. --
 
 export const AppLive: Layer.Layer<Stats | Greeter | Store | Config> = Layer.mergeAll(
   StatsLive,
-  StoreLive,
+  Store.layer,
   ConfigLive,
   Layer.provide(GreeterLive, ConfigLive),
 );

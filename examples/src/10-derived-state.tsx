@@ -13,27 +13,26 @@
  */
 import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { atom, derive, mount, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom, derive, mount, rec } from '@tmonier/effract';
 
-class Thermostat extends Context.Service<
-  Thermostat,
-  {
-    readonly celsius: Atom<number>; // the source of truth
-    readonly fahrenheit: Atom<number>; // a two-way projection of celsius
-    readonly label: ReadableAtom<string>; // a computed view of celsius
-  }
->()('recipes/Thermostat') {}
-
-const ThermostatLive = Layer.sync(Thermostat)(() => {
-  const celsius = atom(20);
-  const fahrenheit = derive.writable(
-    ($) => $(celsius) * 1.8 + 32,
-    (f) => celsius.set(Math.round((f - 32) / 1.8)),
-  );
-  const label = celsius.derive((c) => (c < 18 ? 'cold' : c > 24 ? 'warm' : 'comfy'));
-  return { celsius, fahrenheit, label };
-});
+// The shape (celsius: Atom, fahrenheit: Atom, label: ReadableAtom) is inferred
+// from what `make` returns; the Live layer is a `static`.
+class Thermostat extends Context.Service<Thermostat>()('recipes/Thermostat', {
+  make: Effect.sync(() => {
+    const celsius = atom(20); // the source of truth
+    const fahrenheit = derive.writable(
+      // a two-way projection of celsius
+      ($) => $(celsius) * 1.8 + 32,
+      (f) => celsius.set(Math.round((f - 32) / 1.8)),
+    );
+    const label = celsius.derive((c) => (c < 18 ? 'cold' : c > 24 ? 'warm' : 'comfy'));
+    return { celsius, fahrenheit, label };
+  }),
+}) {
+  static readonly layer = Layer.effect(Thermostat, Thermostat.make);
+}
 
 // Reads the source and a computed view; re-renders precisely when celsius changes.
 export const Readout = rec(function* () {
@@ -61,7 +60,7 @@ export const FahrenheitStepper = rec(function* () {
 
 export const App = (): ReactNode =>
   mount(
-    ThermostatLive,
+    Thermostat.layer,
     rec(function* () {
       return (
         <div>

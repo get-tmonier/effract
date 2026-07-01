@@ -2,38 +2,35 @@
  * Recipe 05 — a stateful service.
  *
  * State lives in the Effect world — an `atom` inside a service — not in a React
- * tree. Values *derived* from that state live there too: `count` is a `derive`
- * over `items`, computed once in the service, never recomputed in a component.
- * The component reads either by `yield*`ing it (read + subscribe) and mutates by
- * calling a service method. Because the state belongs to the runtime, it is
- * reachable from anywhere an Effect runs (other components, background fibers,
- * even the server).
+ * tree. Declare the service the general Effect way: `Context.Service<Self>()(id,
+ * { make })` infers the shape from what `make` returns (write it once), and the
+ * Live `Layer` is a `static layer`. Values *derived* from the state live here too
+ * (`count` is `items.derive(...)`), computed once, never in a component. The
+ * component reads by `yield*`ing and mutates by calling a method. Because the
+ * state belongs to the runtime, it is reachable from anywhere an Effect runs.
+ *
+ * `make` is an `Effect`, so this same shape scales up: `Effect.gen` to depend on
+ * other services, `Layer.provide` on the layer to supply them.
  */
 import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { atom, mount, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom, mount, rec } from '@tmonier/effract';
 
-class Cart extends Context.Service<
-  Cart,
-  {
-    readonly items: Atom<ReadonlyArray<string>>;
-    readonly count: ReadableAtom<number>; // derived from items — computed in the service
-    readonly add: (item: string) => void;
-  }
->()('recipes/Cart') {}
-
-const CartLive = Layer.sync(Cart)(() => {
-  const items = atom<ReadonlyArray<string>>([]);
-  const count = items.derive((list) => list.length); // derivation stays here, not in a component
-  return {
-    items,
-    count,
-    add: (item) => {
-      items.update((current) => [...current, item]);
-    },
-  };
-});
+class Cart extends Context.Service<Cart>()('recipes/Cart', {
+  make: Effect.sync(() => {
+    const items = atom<ReadonlyArray<string>>([]);
+    const count = items.derive((list) => list.length); // derived — computed in the service
+    return {
+      items,
+      count,
+      add: (item: string) => items.update((current) => [...current, item]),
+    };
+  }),
+}) {
+  static readonly layer = Layer.effect(Cart, Cart.make);
+}
 
 export const CartView = rec(function* () {
   const cart = yield* Cart;
@@ -51,4 +48,4 @@ export const CartView = rec(function* () {
   );
 });
 
-export const App = (): ReactNode => mount(CartLive, CartView);
+export const App = (): ReactNode => mount(Cart.layer, CartView);

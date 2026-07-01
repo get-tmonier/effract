@@ -10,7 +10,6 @@ export {
   ConfigLive,
   StatsLive,
   GreeterLive,
-  StoreLive,
   AppLive,
 } from './services.ts';
 export type { Todo } from './services.ts';

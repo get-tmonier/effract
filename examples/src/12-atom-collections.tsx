@@ -13,8 +13,9 @@
  */
 import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { atom, atomFamily, batch, mount, rec, type Atom, type AtomFamily } from '@tmonier/effract';
+import { atom, atomFamily, batch, mount, rec } from '@tmonier/effract';
 
 interface Person {
   readonly id: string;
@@ -26,31 +27,26 @@ const people: ReadonlyArray<Person> = [
   { id: 'grace', name: 'Grace' },
 ];
 
-class Roster extends Context.Service<
-  Roster,
-  {
-    readonly people: ReadonlyArray<Person>;
-    readonly attendanceOf: AtomFamily<string, Atom<boolean>>; // one atom per person
-    readonly toggle: (id: string) => void;
-    readonly resetAll: () => void;
-  }
->()('recipes/Roster') {}
-
-const RosterLive = Layer.sync(Roster)(() => {
-  const attendanceOf = atomFamily((_id: string) => atom(false));
-  return {
-    people,
-    attendanceOf,
-    toggle: (id) => attendanceOf(id).update((here) => !here),
-    // One notification wave for the whole roster — each row re-renders once.
-    resetAll: () =>
-      batch(() => {
-        for (const person of people) {
-          attendanceOf(person.id).set(false);
-        }
-      }),
-  };
-});
+// The shape (people, attendanceOf, toggle, resetAll) is inferred from `make`.
+class Roster extends Context.Service<Roster>()('recipes/Roster', {
+  make: Effect.sync(() => {
+    const attendanceOf = atomFamily((_id: string) => atom(false)); // one atom per person
+    return {
+      people,
+      attendanceOf,
+      toggle: (id: string) => attendanceOf(id).update((here) => !here),
+      // One notification wave for the whole roster — each row re-renders once.
+      resetAll: () =>
+        batch(() => {
+          for (const person of people) {
+            attendanceOf(person.id).set(false);
+          }
+        }),
+    };
+  }),
+}) {
+  static readonly layer = Layer.effect(Roster, Roster.make);
+}
 
 // A row reads *its own* atom, so a toggle re-renders only this row.
 const Row = rec(function* (props: Person) {
@@ -81,4 +77,4 @@ export const Attendance = rec(function* () {
   );
 });
 
-export const App = (): ReactNode => mount(RosterLive, Attendance);
+export const App = (): ReactNode => mount(Roster.layer, Attendance);

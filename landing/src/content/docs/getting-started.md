@@ -38,20 +38,22 @@ A React Effect Component (REC) is a real React component. Define a service, read
 the runtime in once with `mount`:
 
 ```tsx
-import { mount, rec, atom, type Atom } from '@tmonier/effract';
+import { mount, rec, atom } from '@tmonier/effract';
 import { createRoot } from 'react-dom/client';
 import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
 
 // A stateful service — the state *and* the logic over it live here, in Effect.
-class Counter extends Context.Service<
-  Counter,
-  { readonly count: Atom<number>; readonly inc: () => void }
->()('app/Counter') {}
-const CounterLive = Layer.sync(Counter)(() => {
-  const count = atom(0);
-  return { count, inc: () => count.update((n) => n + 1) };
-});
+// The shape is inferred from `make`; the Live layer is a `static`.
+class Counter extends Context.Service<Counter>()('app/Counter', {
+  make: Effect.sync(() => {
+    const count = atom(0);
+    return { count, inc: () => count.update((n) => n + 1) };
+  }),
+}) {
+  static readonly layer = Layer.effect(Counter, Counter.make);
+}
 
 // Card is a plain React component — an ordinary function, left untouched.
 const Card = ({ children }: { children: React.ReactNode }) => <section className="card">{children}</section>;
@@ -68,7 +70,7 @@ const App = rec(function* () {
   return <Card>{yield* CounterView}</Card>;
 });
 
-createRoot(document.getElementById('root')!).render(mount(CounterLive, App));
+createRoot(document.getElementById('root')!).render(mount(Counter.layer, App));
 ```
 
 The state lives in the `Counter` service; the component only reads it (`yield* counter.count`) and fires

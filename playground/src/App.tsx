@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react';
 import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { atom, batch, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom, batch, rec } from '@tmonier/effract';
 
 /**
  * effract — logic in Effect, React for render.
@@ -25,37 +26,30 @@ const MENU: ReadonlyArray<Item> = [
   { name: '🍵 matcha', price: 5 },
 ];
 
-export class Cart extends Context.Service<
-  Cart,
-  {
-    readonly items: Atom<ReadonlyArray<Item>>;
-    readonly count: ReadableAtom<number>; // derived — computed in the service
-    readonly total: ReadableAtom<number>; // derived
-    readonly add: (item: Item) => void;
-    readonly addRound: () => void; // many writes, one notification (batch)
-    readonly clear: () => void;
-  }
->()('demo/Cart') {}
-
-export const AppLive = Layer.sync(Cart)(() => {
-  const items = atom<ReadonlyArray<Item>>([]);
-  const count = items.derive((list) => list.length);
-  const total = items.derive((list) => list.reduce((sum, item) => sum + item.price, 0));
-  return {
-    items,
-    count,
-    total,
-    add: (item) => items.update((xs) => [...xs, item]),
-    // Adds three items but notifies subscribers once — one re-render, not three.
-    addRound: () =>
-      batch(() => {
-        for (const item of MENU) {
-          items.update((xs) => [...xs, item]);
-        }
-      }),
-    clear: () => items.set([]),
-  };
-});
+// The shape is inferred from `make`; the Live layer is `Cart.layer`.
+export class Cart extends Context.Service<Cart>()('demo/Cart', {
+  make: Effect.sync(() => {
+    const items = atom<ReadonlyArray<Item>>([]);
+    const count = items.derive((list) => list.length); // derived
+    const total = items.derive((list) => list.reduce((sum, item) => sum + item.price, 0)); // derived
+    return {
+      items,
+      count,
+      total,
+      add: (item: Item) => items.update((xs) => [...xs, item]),
+      // Adds three items but notifies subscribers once — one re-render, not three.
+      addRound: () =>
+        batch(() => {
+          for (const item of MENU) {
+            items.update((xs) => [...xs, item]);
+          }
+        }),
+      clear: () => items.set([]),
+    };
+  }),
+}) {
+  static readonly layer = Layer.effect(Cart, Cart.make);
+}
 
 // ── The UI: pure render + events, no state, no logic ─────────────────────────
 

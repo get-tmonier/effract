@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { atom, derive, mount, rec, type AsyncDerived, type Atom } from '@tmonier/effract';
+import { atom, derive, mount, rec } from '@tmonier/effract';
 
 // Pretend network: convert an amount into another currency.
 const fetchConverted = (amount: number): Effect.Effect<number> =>
@@ -24,20 +24,17 @@ const fetchConverted = (amount: number): Effect.Effect<number> =>
       new Promise<number>((resolve) => setTimeout(() => resolve(Math.round(amount * 1.09)), 200)),
   );
 
-class Converter extends Context.Service<
-  Converter,
-  {
-    readonly amount: Atom<number>; // the source of truth
-    readonly converted: AsyncDerived<number, never, never>; // an async view of amount
-  }
->()('recipes/Converter') {}
-
-const ConverterLive = Layer.sync(Converter)(() => {
-  const amount = atom(100);
-  // Reads amount synchronously, returns the Effect that converts it.
-  const converted = derive.effect(($) => fetchConverted($(amount)));
-  return { amount, converted };
-});
+// The shape (amount: Atom, converted: AsyncDerived) is inferred from `make`.
+class Converter extends Context.Service<Converter>()('recipes/Converter', {
+  make: Effect.sync(() => {
+    const amount = atom(100); // the source of truth
+    // Reads amount synchronously, returns the Effect that converts it.
+    const converted = derive.effect(($) => fetchConverted($(amount)));
+    return { amount, converted };
+  }),
+}) {
+  static readonly layer = Layer.effect(Converter, Converter.make);
+}
 
 // Suspends while the conversion runs; refetches when amount changes.
 export const Quote = rec(function* () {
@@ -54,4 +51,4 @@ export const Quote = rec(function* () {
   );
 }).suspense(<i>converting…</i>); // discharge the loading obligation
 
-export const App = (): ReactNode => mount(ConverterLive, Quote);
+export const App = (): ReactNode => mount(Converter.layer, Quote);

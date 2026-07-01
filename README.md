@@ -72,11 +72,18 @@ function Cart() {
 }
 
 // ✅ logic in a service — testable, universal, reusable; the component only renders
-class Cart extends Context.Service<Cart, {
-  readonly items: Atom<ReadonlyArray<Item>>;
-  readonly total: ReadableAtom<number>;                       // derived, in Effect
-  readonly add: (item: Item) => void;
-}>()('Cart') {}
+class Cart extends Context.Service<Cart>()('Cart', {
+  make: Effect.sync(() => {
+    const items = atom<ReadonlyArray<Item>>([]);
+    return {
+      items,
+      total: items.derive((xs) => xs.reduce((n, i) => n + i.price, 0)), // derived, in Effect
+      add: (item: Item) => items.update((xs) => [...xs, item]),
+    };
+  }),
+}) {
+  static layer = Layer.effect(Cart, Cart.make);
+}
 
 const CartButton = rec(function* () {
   const cart = yield* Cart;
@@ -169,22 +176,24 @@ One package. Its only peers are **React 19+** and **Effect v4** — nothing else
 Flight runtime (see [Bundle size](#bundle-size)).
 
 ```tsx
-import { mount, rec, atom, type Atom } from '@tmonier/effract';
+import { mount, rec, atom } from '@tmonier/effract';
 import { createRoot } from 'react-dom/client';
 import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
 
 const Card = ({ children }: { children: React.ReactNode }) => <section>{children}</section>; // plain React
 
 // State and the logic over it live in a service, in Effect.
-class Counter extends Context.Service<Counter, {
-  readonly count: Atom<number>;
-  readonly inc: () => void;
-}>()('Counter') {}
-const CounterLive = Layer.sync(Counter)(() => {
-  const count = atom(0);
-  return { count, inc: () => count.update((n) => n + 1) };
-});
+// The shape is inferred from make; the Live layer is a static.
+class Counter extends Context.Service<Counter>()('Counter', {
+  make: Effect.sync(() => {
+    const count = atom(0);
+    return { count, inc: () => count.update((n) => n + 1) };
+  }),
+}) {
+  static layer = Layer.effect(Counter, Counter.make);
+}
 
 const CounterView = rec(function* () {
   const counter = yield* Counter; // a service → it's a REC
@@ -196,7 +205,7 @@ const App = rec(function* () {
   return <Card>{yield* CounterView}</Card>; // plain JSX + a yielded REC
 });
 
-createRoot(document.getElementById('root')!).render(mount(CounterLive, App));
+createRoot(document.getElementById('root')!).render(mount(Counter.layer, App));
 ```
 
 Full guide and docs → **[effract.tmonier.com](https://effract.tmonier.com)**.
@@ -234,17 +243,17 @@ mutates it by calling a service method. The state belongs to the runtime, so it'
 an Effect runs — other components, background fibers, the server.
 
 ```tsx
-class Cart extends Context.Service<Cart, {
-  readonly items: Atom<ReadonlyArray<Item>>;      // state
-  readonly total: ReadableAtom<number>;           // derived — computed here, not in a component
-  readonly add: (item: Item) => void;             // the only way to change it
-}>()('Cart') {}
-
-const CartLive = Layer.sync(Cart)(() => {
-  const items = atom<ReadonlyArray<Item>>([]);
-  const total = items.derive((xs) => xs.reduce((n, i) => n + i.price, 0)); // no $ — one source
-  return { items, total, add: (item) => items.update((xs) => [...xs, item]) };
-});
+// The shape is inferred from make; the Live layer is a static. make is an
+// Effect, so this scales up — Effect.gen to depend on other services.
+class Cart extends Context.Service<Cart>()('Cart', {
+  make: Effect.sync(() => {
+    const items = atom<ReadonlyArray<Item>>([]);
+    const total = items.derive((xs) => xs.reduce((n, i) => n + i.price, 0)); // no $ — one source
+    return { items, total, add: (item: Item) => items.update((xs) => [...xs, item]) };
+  }),
+}) {
+  static layer = Layer.effect(Cart, Cart.make);
+}
 
 const CartSummary = rec(function* () {
   const cart = yield* Cart;
