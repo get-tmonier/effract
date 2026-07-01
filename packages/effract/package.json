@@ -1,6 +1,6 @@
 {
   "name": "@tmonier/effract",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "React components written as Effect programs. yield* services and React hooks in one render pass; run the same component anywhere.",
   "keywords": [
     "effect",
