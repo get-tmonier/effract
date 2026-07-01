@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://effract.tmonier.com"><strong>effract.tmonier.com</strong></a> · <a href="#install">Install</a> · <a href="./docs/adr/0001-fiber-reconciliation.md">ADR</a>
+  <a href="https://effract.tmonier.com"><strong>effract.tmonier.com</strong></a> · <a href="#install">Install</a> · <a href="https://stackblitz.com/github/get-tmonier/effract">Playground</a> · <a href="./docs/adr/0001-fiber-reconciliation.md">ADR</a>
 </p>
 
 <p align="center">
@@ -18,6 +18,10 @@
   <img alt="React" src="https://img.shields.io/badge/React-19%2B-29d3c2" />
   <img alt="Effect" src="https://img.shields.io/badge/Effect-v4-7c5cff" />
   <img alt="license" src="https://img.shields.io/badge/license-MIT-29d3c2" />
+</p>
+
+<p align="center">
+  <a href="https://stackblitz.com/github/get-tmonier/effract"><img alt="Open in StackBlitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" /></a>
 </p>
 
 ---
@@ -57,7 +61,7 @@ drives _synchronously, during render_, answering each `yield*` by what it is:
 | `yield* SomeService` | resolves it synchronously from the runtime's `Context` |
 | `yield* hook(useState(0))` | a genuine React hook — keeps its place in React's hook order |
 | `yield* someAsyncEffect` | suspends through React Suspense / `use`, resumes inline |
-| a genuine failure | throws to the nearest React error boundary |
+| a typed failure | renders a [`.catch`](#typed-errors) fallback for its `_tag` — else throws to the nearest error boundary |
 
 A REC is **not** a JSX element — `<Counter />` is a compile error. You _place_ one by yielding it:
 `{yield* Counter}`, or `{yield* Greet.with({ name: 'Ada' })}` for props. Plain components sit right
@@ -169,6 +173,27 @@ const [n, setN] = useAtom(likes); // the useState shape, backed by Effect
 <Observe>{($) => <b>{$(likes)}</b>}</Observe>; // inline in JSX
 ```
 
+## Typed errors
+
+A REC's failures are part of its type — Effect's error channel `E` rides along with every `yield*`.
+`.catch` turns it into an **exhaustive, compile-checked** map of fallbacks: one per error `_tag`, each
+handed exactly that error. Forget a case and it won't compile; there's no `try`/`catch`, no
+`error instanceof`, no untyped boundary.
+
+```tsx
+const Profile = rec(function* () {
+  const user = yield* fetchUser(id); // E = NotFound | Unauthorized
+  return <Card user={user} />;
+}).catch({
+  NotFound: () => <Empty />,
+  Unauthorized: (e) => <Login reason={e.reason} />, // e is the Unauthorized error, typed
+}); // ✗ forget a tag → compile error   ✗ invent one → excess property
+```
+
+What comes back is a **plain REC** — its declared failures discharged — so `yield*` or `mount` it
+anywhere. It works the same on the client (sync throw or an async rejection re-thrown through Suspense)
+and on the server. Suspense signals and defects are never swallowed; a child REC owns its own failures.
+
 ## React Server Components
 
 No extra package, no new API. In a framework that owns the RSC pipeline (Next.js, TanStack Start), you
@@ -196,7 +221,7 @@ client islands you `mount`, and the type system enforces that line.
 
 ## Recipes & examples
 
-Seven typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
+Eight typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
 in [`apps/`](./apps) — all rendering the **same shared components** to prove the abstraction holds:
 
 | App | Environment |
