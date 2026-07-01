@@ -6,10 +6,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-07-01
+
 **The public API is now three primitives — `rec`, `hook`, `mount`** (plus optional signals). One
 import, one boundary. `mount(layer, Root)` from `@tmonier/effract` renders on the client **and** the
 server; the client/server split becomes an implementation detail the bundler resolves, not something you
-type. This release has breaking changes — a `0.3.0`-worthy consolidation.
+type. A breaking consolidation.
 
 ### Changed
 
@@ -104,7 +106,8 @@ The first public scaffold of effract — React components written as Effect prog
 - **Recipes** — eight typechecked, copy-pasteable call sites under `examples/`.
 - **ADR 0001** — the fiber-reconciliation design and its tradeoffs.
 
-[Unreleased]: https://github.com/get-tmonier/effract/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/get-tmonier/effract/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/get-tmonier/effract/releases/tag/v0.3.0
 [0.2.1]: https://github.com/get-tmonier/effract/releases/tag/v0.2.1
 [0.2.0]: https://github.com/get-tmonier/effract/releases/tag/v0.2.0
 [0.1.0]: https://github.com/get-tmonier/effract/releases/tag/v0.1.0
