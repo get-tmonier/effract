@@ -4,6 +4,7 @@ import Everywhere from '#components/Everywhere.astro';
 import Features from '#components/Features.astro';
 import Footer from '#components/Footer.astro';
 import Hero from '#components/Hero.astro';
+import Loading from '#components/Loading.astro';
 import Nav from '#components/Nav.astro';
 import Philosophy from '#components/Philosophy.astro';
 import Thesis from '#components/Thesis.astro';
@@ -26,6 +27,7 @@ const { content, locale } = Astro.props;
     <Everywhere content={content} />
     <Philosophy content={content} />
     <TypedErrors content={content} />
+    <Loading content={content} />
     <Features content={content} />
     <Cta content={content} locale={locale} />
   </main>

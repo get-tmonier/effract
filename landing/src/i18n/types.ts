@@ -62,6 +62,12 @@ export interface SiteContent {
     readonly body: string;
     readonly caption: string;
   };
+  readonly loading: {
+    readonly label: string;
+    readonly title: string;
+    readonly body: string;
+    readonly caption: string;
+  };
   readonly philosophy: {
     readonly label: string;
     readonly title: string;

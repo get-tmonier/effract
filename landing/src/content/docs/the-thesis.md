@@ -40,10 +40,10 @@ render pass, the call obeys the Rules of Hooks like any other.
 
 ## Tradeoffs
 
-effract inherits React's constraints — a body must yield hooks in a stable order — and adds one of
-its own: raw `yield* asyncEffect` caches per component instance by encounter order (load-once
-semantics). For reactive or refetching data, reach for [signals](/docs/signals/) or a service that
-manages its own caching.
+effract inherits React's constraints — a body must yield hooks in a stable order. A raw `yield*
+asyncEffect` suspends at runtime but is neither type-tracked nor deduped; for loading tracking,
+refetch and cancellation reach for [`query`](/docs/loading/), and for reactive state
+[signals](/docs/signals/).
 
 The full design is written up as an architecture decision record:
 [ADR 0001 — Fiber reconciliation](https://github.com/get-tmonier/effract/blob/main/docs/adr/0001-fiber-reconciliation.md).

@@ -39,7 +39,7 @@ const fr: SiteContent = {
     rows: [
       { write: 'yield* Stats', does: 'un service, résolu de façon synchrone' },
       { write: 'yield* hook(useState(0))', does: 'un vrai hook React, ordre stable' },
-      { write: 'yield* fetchUser', does: 'suspend, puis reprend sur place' },
+      { write: 'yield* query(data, id)', does: 'suspend ; chargement suivi par le type' },
       { write: 'un échec typé', does: 'affiche une vue de repli via .catch' },
     ],
   },
@@ -60,6 +60,12 @@ const fr: SiteContent = {
     title: 'Chaque échec a un visage',
     body: 'Les échecs d’un REC vivent dans son type. [[.catch les transforme en UI]] — une vue de repli par tag d’erreur, vérifiée de façon exhaustive. Sans try/catch, sans error instanceof, sans boundary non typée. En synchrone ou async, côté client ou serveur.',
     caption: 'Oubliez un cas et [[ça ne compile pas]] — le canal d’erreurs vous garde honnête.',
+  },
+  loading: {
+    label: 'Le chargement, géré',
+    title: 'Un état de chargement qu’on ne peut pas oublier',
+    body: 'Les données async passent par [[query]] — il suspend le rendu, refait la requête quand la clé change et interrompt sa fibre au démontage. Et, comme .catch pour les erreurs, il inscrit une obligation de chargement dans le type : mount [[ne compile pas]] tant que vous ne la traitez pas, avec .suspense(fallback) ou { loading }. Retries et timeouts sont de simples combinateurs Effect.',
+    caption: 'L’obligation remonte jusqu’à la racine — une seule boundary couvre le sous-arbre.',
   },
   philosophy: {
     label: 'Philosophie',
@@ -120,7 +126,7 @@ const fr: SiteContent = {
   },
   cta: {
     title: 'Écrivez-le une fois. Exécutez-le partout où tourne un runtime.',
-    body: 'MIT, sur npm. Commencez par la doc, ou les huit recettes de call site.',
+    body: 'MIT, sur npm. Commencez par la doc, ou les neuf recettes de call site.',
     primary: 'Commencer',
     secondary: 'Voir sur GitHub',
   },

@@ -194,6 +194,42 @@ What comes back is a **plain REC** — its declared failures discharged — so `
 anywhere. It works the same on the client (sync throw or an async rejection re-thrown through Suspense)
 and on the server. Suspense signals and defects are never swallowed; a child REC owns its own failures.
 
+## Loading, handled
+
+Async data goes through **`query`**. It suspends the render for the value, refetches when its key
+changes, and interrupts the in-flight fiber if the component unmounts (finalizers run). Retries,
+timeouts and cancellation are just Effect combinators on the effect — no new API.
+
+```tsx
+const Profile = rec(function* () {
+  const user = yield* query(fetchUser(id), id); // refetch when id changes
+  return <Card user={user} />;
+});
+```
+
+And — mirroring `.catch` for errors — a `query` puts a **loading obligation** in the REC's type: `S`.
+It bubbles up like requirements do, and `mount` **won't compile** until it's discharged, so you can't
+forget a boundary:
+
+```tsx
+mount(App, Profile);                          // ✗ compile error: loading not handled
+mount(App, Profile.suspense(<Spinner />));    // ✓ handled in the tree
+mount(App, Profile, { loading: <Spinner /> }); // ✓ handled at the boundary
+```
+
+One `.suspense` discharges the whole subtree beneath it (it _is_ a real `<Suspense>`). On the server
+there's no pending state — a `query` is awaited inline — so the server `mount` imposes no obligation.
+
+**Raw async is the escape hatch.** A plain `yield* asyncEffect` still suspends at runtime — but the
+compiler can't tell a sync `Effect` from an async one (they're the same type), so it carries **no**
+loading obligation: you bring your own `<Suspense>`. Reach for `query` when you want the type to track
+it — plus refetch, cancellation, and de-duplication. One word opts in:
+
+```tsx
+yield* Effect.promise(() => fetchThing());        // suspends at runtime · S = never · your boundary
+yield* query(Effect.promise(() => fetchThing())); // suspends · S = Suspends · tracked, deduped, cancelled
+```
+
 ## React Server Components
 
 No extra package, no new API. In a framework that owns the RSC pipeline (Next.js, TanStack Start), you
@@ -221,7 +257,7 @@ client islands you `mount`, and the type system enforces that line.
 
 ## Recipes & examples
 
-Eight typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
+Nine typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
 in [`apps/`](./apps) — all rendering the **same shared components** to prove the abstraction holds:
 
 | App | Environment |

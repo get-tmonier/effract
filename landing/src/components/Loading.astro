@@ -1,0 +1,38 @@
+---
+import CodeWindow from '#components/CodeWindow.astro';
+import { emphasize } from '#lib/text';
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+}
+const { loading } = Astro.props.content;
+
+const code = `// query: async data as a typed dependency
+const Profile = rec(function* () {
+  const user = yield* query(fetchUser(id), id)
+  return <Card user={user}/>
+})
+//  Profile: REC<…, Suspends>  ← must handle loading
+
+mount(App, Profile)                       // ✗ won't compile
+mount(App, Profile.suspense(<Spinner/>))  // ✓ handled`;
+---
+
+<section id="loading" class="relative mx-auto max-w-6xl px-5 py-14 sm:py-20 lg:py-24">
+  <div class="grid grid-cols-1 gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-16">
+    <div class="reveal">
+      <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{loading.label}</p>
+      <h2 class="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{loading.title}</h2>
+      <p class="mt-5 leading-relaxed text-ink-dim text-pretty" set:html={emphasize(loading.body)} />
+    </div>
+
+    <div class="reveal" style="--reveal-delay: 120ms">
+      <CodeWindow code={code} title="profile.tsx" />
+      <p
+        class="mt-4 text-center text-sm text-muted text-pretty"
+        set:html={emphasize(loading.caption)}
+      />
+    </div>
+  </div>
+</section>
