@@ -18,6 +18,7 @@ import * as Cause from 'effect/Cause';
 import * as Effect from 'effect/Effect';
 import * as Exit from 'effect/Exit';
 import {
+  isAtom,
   isHook,
   isPlacement,
   isSuspensable,
@@ -93,6 +94,9 @@ export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
       // key, and (backed by a cross-render store) interrupts on unmount. Keyed by
       // encounter order.
       result = deps.suspensableResolver.resolve(instruction, state.queryIndex++);
+    } else if (isAtom(instruction)) {
+      // Reactive state: read the atom's value and subscribe this render to it.
+      result = deps.reader.read(instruction);
     } else {
       result = resolveEffect(instruction, deps, state);
     }

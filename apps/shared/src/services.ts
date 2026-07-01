@@ -12,7 +12,7 @@ import * as Context from 'effect/Context';
 import * as Duration from 'effect/Duration';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { AtomRef } from 'effect/unstable/reactivity';
+import { atom, type Atom } from '@tmonier/effract';
 
 // --- Config: app constants, and a dependency of Greeter -----------------------
 
@@ -66,8 +66,8 @@ export interface Todo {
 export class Store extends Context.Service<
   Store,
   {
-    readonly likes: AtomRef.AtomRef<number>;
-    readonly todos: AtomRef.AtomRef<ReadonlyArray<Todo>>;
+    readonly likes: Atom<number>;
+    readonly todos: Atom<ReadonlyArray<Todo>>;
     readonly like: () => void;
     readonly addTodo: (text: string) => void;
     readonly toggleTodo: (id: number) => void;
@@ -75,8 +75,8 @@ export class Store extends Context.Service<
 >()('shared/Store') {}
 
 export const StoreLive: Layer.Layer<Store> = Layer.sync(Store)(() => {
-  const likes = AtomRef.make(0);
-  const todos = AtomRef.make<ReadonlyArray<Todo>>([
+  const likes = atom(0);
+  const todos = atom<ReadonlyArray<Todo>>([
     { id: 1, text: 'Read a service with yield*', done: true },
     { id: 2, text: 'Hold state with a real React hook', done: true },
     { id: 3, text: 'Run the same component on the server', done: false },

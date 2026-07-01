@@ -16,7 +16,7 @@
  * needs a service. The two compose freely in the same tree.
  */
 import { Suspense, useState, type ReactNode } from 'react';
-import { rec, hook, observe } from '@tmonier/effract';
+import { rec, hook } from '@tmonier/effract';
 import { StatsBadge } from './universal.tsx';
 import { Config, Greeter, Stats, Store } from './services.ts';
 
@@ -63,12 +63,12 @@ export const Counter = rec(function* () {
 });
 
 /**
- * Wired to a *stateful* service. `observe` subscribes to the store's reactive
- * `likes` cell; the button calls a real service method that mutates it.
+ * Wired to a *stateful* service. `yield*`ing the store's reactive `likes` atom
+ * reads it and subscribes; the button calls a real service method that mutates it.
  */
 export const Likes = rec(function* () {
   const store = yield* Store;
-  const likes = yield* hook(observe(($) => $(store.likes)));
+  const likes = yield* store.likes;
   return (
     <button
       type="button"
@@ -83,11 +83,12 @@ export const Likes = rec(function* () {
 
 /**
  * The fullest call site: a stateful service (`Store`), a precise reactive read
- * (`observe`), and a local React hook (`useState` for the draft) — together.
+ * (`yield*` the `todos` atom), and a local React hook (`useState` for the draft
+ * input) — together in one body.
  */
 export const Todos = rec(function* () {
   const store = yield* Store;
-  const todos = yield* hook(observe(($) => $(store.todos)));
+  const todos = yield* store.todos;
   const [draft, setDraft] = yield* hook(useState(''));
 
   const submit = (): void => {

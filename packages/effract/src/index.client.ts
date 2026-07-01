@@ -25,12 +25,16 @@ export {
   query,
   isSuspensable,
   SuspensableTypeId,
+  isAtom,
+  AtomTypeId,
 } from '#domain/protocol.ts';
 export type {
   AnyEffect,
   Hook,
   Suspensable,
   Suspends,
+  Atom,
+  ReadableAtom,
   Yieldable,
   RecBody,
   RecGenerator,
@@ -61,12 +65,15 @@ export { Runtime, useEffractRuntime } from '#infrastructure/react/runtime.tsx';
 export type { RuntimeProps } from '#infrastructure/react/runtime.tsx';
 
 // --- reactivity ---
+// `atom` / `derive` are server-safe (a service can hold one); the hooks that read
+// them in a component are client-only, like `hook` itself.
+export { atom, derive } from '#infrastructure/reactivity-core.ts';
+export type { Read } from '#infrastructure/reactivity-core.ts';
 export {
   observe,
   Observe,
-  atom,
   useAtom,
   useAtomValue,
   useAtomSet,
 } from '#infrastructure/react/reactivity.tsx';
-export type { Read, ObserveProps } from '#infrastructure/react/reactivity.tsx';
+export type { ObserveProps } from '#infrastructure/react/reactivity.tsx';

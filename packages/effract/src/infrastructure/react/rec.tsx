@@ -35,6 +35,7 @@ import type * as Layer from 'effect/Layer';
 import { driveRecCaught } from '#application/interpreter.ts';
 import type { Placer, RenderCache, Suspender } from '#application/ports.ts';
 import type { RecHandle, RecPlacement } from '#domain/protocol.ts';
+import { atomReader } from '#infrastructure/react/reactivity.tsx';
 import {
   makeSuspensableResolver,
   nextInstanceId,
@@ -125,7 +126,14 @@ const clientFcFor = (handle: RecHandle<ReactNode>): FunctionComponent<object> =>
     const resolver = makeSuspensableResolver(scope, executor, suspender, used);
     const node = driveRecCaught(
       handle.body(props),
-      { executor, suspender, cache, suspensableResolver: resolver, placer: clientPlacer },
+      {
+        executor,
+        suspender,
+        cache,
+        suspensableResolver: resolver,
+        reader: atomReader,
+        placer: clientPlacer,
+      },
       handle.catchHandlers,
     );
     // Reached only when the body did not suspend, i.e. this render will commit —

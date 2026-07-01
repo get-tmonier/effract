@@ -1,27 +1,27 @@
 /**
  * Recipe 05 — a stateful service.
  *
- * State lives in the Effect world — an `AtomRef` inside a service — not in a
- * React tree. The component `observe`s it and calls service methods to mutate
- * it. Because the state belongs to the runtime, it is reachable from anywhere
- * an Effect runs (other components, background fibers, even the server).
+ * State lives in the Effect world — an `atom` inside a service — not in a React
+ * tree. The component reads it by `yield*`ing the atom (read + subscribe) and
+ * mutates it by calling a service method. Because the state belongs to the
+ * runtime, it is reachable from anywhere an Effect runs (other components,
+ * background fibers, even the server).
  */
 import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
 import * as Layer from 'effect/Layer';
-import { AtomRef } from 'effect/unstable/reactivity';
-import { rec, hook, mount, observe } from '@tmonier/effract';
+import { atom, mount, rec, type Atom } from '@tmonier/effract';
 
 class Cart extends Context.Service<
   Cart,
   {
-    readonly items: AtomRef.AtomRef<ReadonlyArray<string>>;
+    readonly items: Atom<ReadonlyArray<string>>;
     readonly add: (item: string) => void;
   }
 >()('recipes/Cart') {}
 
 const CartLive = Layer.sync(Cart)(() => {
-  const items = AtomRef.make<ReadonlyArray<string>>([]);
+  const items = atom<ReadonlyArray<string>>([]);
   return {
     items,
     add: (item) => {
@@ -32,7 +32,7 @@ const CartLive = Layer.sync(Cart)(() => {
 
 export const CartView = rec(function* () {
   const cart = yield* Cart;
-  const items = yield* hook(observe(($) => $(cart.items))); // reactive read of service state
+  const items = yield* cart.items; // reactive read of service state — read + subscribe
   return (
     <div>
       <button type="button" onClick={() => cart.add('☕')}>
