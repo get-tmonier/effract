@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://effract.tmonier.com"><strong>effract.tmonier.com</strong></a> · <a href="#install">Install</a> · <a href="https://stackblitz.com/github/get-tmonier/effract">Playground</a> · <a href="./docs/adr/0001-fiber-reconciliation.md">ADR</a>
+  <a href="https://effract.tmonier.com"><strong>effract.tmonier.com</strong></a> · <a href="#install">Install</a> · <a href="https://stackblitz.com/github/get-tmonier/effract/tree/main/playground">Playground</a> · <a href="./docs/adr/0001-fiber-reconciliation.md">ADR</a>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://stackblitz.com/github/get-tmonier/effract"><img alt="Open in StackBlitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" /></a>
+  <a href="https://stackblitz.com/github/get-tmonier/effract/tree/main/playground"><img alt="Open in StackBlitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" /></a>
 </p>
 
 ---
