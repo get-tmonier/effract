@@ -84,6 +84,13 @@ interface RecCore<P, E, R, S> extends RecHandle<ReactNode> {
    * Returns a REC whose error channel keeps only the non-tagged remainder
    * (usually `never`); the loading obligation `S` is untouched. It catches *this*
    * REC's own `yield*`ed failures; a child REC handles its own (wrap it too).
+   *
+   * The fallback renders *in place* (the component stays mounted and subscribed,
+   * so it recovers when inputs change), so a catchable **async** yield — a
+   * `query`/`suspend` — must be the body's **last hook-bearing yield**: put
+   * reactive reads / `hook(...)` before it. A failure that skips later hooks trips
+   * React's "rendered fewer hooks" rule on a re-render; if a later hook needs the
+   * fetched value, move it into a child REC (a placement is not a hook).
    */
   catch(handlers: CatchHandlers<E>): REC<P, UntaggedErrors<E>, R, S>;
   /**

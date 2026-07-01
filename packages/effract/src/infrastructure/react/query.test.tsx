@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as Data from 'effect/Data';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { hook, mount, query, rec, suspend } from '../../index.client.ts';
+import { atom, hook, mount, query, rec, suspend } from '../../index.client.ts';
 
 Reflect.set(globalThis, 'IS_REACT_ACT_ENVIRONMENT', true);
 
@@ -230,6 +230,77 @@ describe('query — async data + loading obligation', () => {
     });
     await flush();
     expect(container.textContent).toContain('hi Ada');
+    await act(async () => root.unmount());
+  });
+
+  it('a refetch that fails renders the .catch fallback in place (siblings survive)', async () => {
+    // Mirrors the playground: a query keyed by a service atom, initially succeeds,
+    // then the key changes to one whose fetch fails with a typed error. Gated
+    // promises make the async settlement deterministic.
+    const gates = new Map<number, { promise: Promise<string>; settle: () => void }>();
+    const gateFor = (id: number): { promise: Promise<string>; settle: () => void } => {
+      const existing = gates.get(id);
+      if (existing) {
+        return existing;
+      }
+      let settle: () => void = () => {};
+      const promise = new Promise<string>((resolve, reject) => {
+        settle = () => (id === 9 ? reject(new NotFound({ id })) : resolve(`product-${id}`));
+      });
+      const gate = { promise, settle };
+      gates.set(id, gate);
+      return gate;
+    };
+    const load = (id: number): Effect.Effect<string, NotFound> =>
+      Effect.tryPromise({ try: () => gateFor(id).promise, catch: (e) => e as NotFound });
+
+    const sku = atom(1);
+    // The catchable async yield is the *last* hook-bearing yield in the body, so a
+    // failure never skips a later hook (which on a re-render would trip React's
+    // "rendered fewer hooks" invariant and tear the tree down).
+    const Product = rec(function* () {
+      const id = yield* sku;
+      const name = yield* query(load(id), id); // refetch when the id changes
+      return <span data-x="name">{name}</span>;
+    })
+      .catch({ NotFound: (e) => <span data-x="err">missing {e.id}</span> })
+      .suspense(<i>loading</i>);
+    const Page = rec(function* () {
+      return (
+        <div>
+          <span data-x="sibling">nav</span>
+          {yield* Product}
+        </div>
+      );
+    });
+
+    const root = createRoot(container);
+    await act(async () => root.render(mount(Layer.empty, Page)));
+    await act(async () => {
+      gateFor(1).settle();
+      await gateFor(1).promise;
+    });
+    await flush();
+    expect(container.querySelector('[data-x="name"]')?.textContent).toBe('product-1');
+
+    // Refetch to a failing id — the .catch fallback renders in place, and the
+    // sibling survives (the tree must NOT unmount).
+    await act(async () => sku.set(9));
+    await act(async () => {
+      gateFor(9).settle();
+      await gateFor(9).promise.catch(() => {});
+    });
+    await flush();
+    expect(container.querySelector('[data-x="sibling"]')).not.toBeNull();
+    expect(container.querySelector('[data-x="err"]')?.textContent).toBe('missing 9');
+
+    // Recovery: because the REC rendered its fallback *inline* (it stayed mounted
+    // and subscribed), navigating back to a valid id re-renders and refetches.
+    await act(async () => sku.set(1));
+    await flush();
+    expect(container.querySelector('[data-x="err"]')).toBeNull();
+    expect(container.querySelector('[data-x="name"]')?.textContent).toBe('product-1');
+
     await act(async () => root.unmount());
   });
 });

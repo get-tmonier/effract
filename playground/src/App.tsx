@@ -60,8 +60,8 @@ const ProductView = rec(function* () {
   const cart = yield* Cart;
   const catalog = yield* Catalog;
   const id = yield* route.productId; // read + subscribe — refetch below re-keys on change
-  const product = yield* query(catalog.product(id), id); // refetch when the route changes
-  const qty = yield* cart.qty;
+  const qty = yield* cart.qty; // read reactive state *before* the query …
+  const product = yield* query(catalog.product(id), id); // … so this catchable async yield is last
   return (
     <div>
       <p className="text-lg">

@@ -55,6 +55,27 @@ renders the matching fallback either way. During an async wait the component sus
 [`.suspense`](/docs/loading/) boundary — or a plain `<Suspense>` above it — shows the loading fallback
 until the value, or the failure, arrives.
 
+## Order: a catchable async yield goes last
+
+When an async yield fails, `.catch` renders the fallback **in place** — the component stays mounted and
+subscribed, so it recovers when its inputs change (navigate to a valid id and it refetches). For that to
+hold, a **catchable async yield** (a `query` / `suspend`, or a raw async effect you `.catch`) must be the
+**last hook-bearing yield** in the body: reads that don't depend on it — `yield*` an atom, `hook(...)` —
+come _before_ it.
+
+```tsx
+const ProductView = rec(function* () {
+  const id = yield* route.productId; // reactive reads first …
+  const qty = yield* cart.qty;
+  const product = yield* query(catalog.product(id), id); // … the catchable query last
+  return <Panel product={product} qty={qty} />;
+}).catch({ NotFound: () => <Empty /> });
+```
+
+Otherwise a failure skips the hooks after it, and on a re-render React's "rendered fewer hooks" invariant
+tears the subtree down. If a later hook genuinely needs the fetched value, put it in a **child REC** and
+pass the value as a prop — a placement (`yield* Child.with(...)`) is not a hook, so it may follow the query.
+
 ## What `.catch` does not swallow
 
 `.catch` handles a REC's **own** `yield*`ed failures. It deliberately leaves three things alone:
