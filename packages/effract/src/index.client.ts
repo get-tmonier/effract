@@ -39,7 +39,7 @@ export type {
 // `'use client'` `react/rec.tsx` — so a server module importing `rec` is not
 // tagged as a client function by an RSC bundler. `mount` here is the client one.
 export { rec, RecTypeId } from '#infrastructure/rec-core.tsx';
-export type { REC, MissingServices, Effective } from '#infrastructure/rec-core.tsx';
+export type { REC, CatchHandlers, MissingServices, Effective } from '#infrastructure/rec-core.tsx';
 export { mount } from '#infrastructure/react/rec.tsx';
 
 // --- the runtime boundary (mount is canonical; Runtime is the low-level provider) ---

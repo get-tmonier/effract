@@ -6,13 +6,15 @@
  */
 import { describe, expect, it } from 'vitest';
 import * as Context from 'effect/Context';
+import * as Data from 'effect/Data';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
 import * as ManagedRuntime from 'effect/ManagedRuntime';
-import { hook, placement, type RecHandle } from '#domain/protocol.ts';
+import { hook, placement, type CatchDispatch, type RecHandle } from '#domain/protocol.ts';
 import { driveServerRec, type RunEffect } from '#application/server-driver.ts';
 
 class Stats extends Context.Service<Stats, { readonly total: number }>()('test/Stats') {}
+class NotFound extends Data.TaggedError('NotFound')<{ readonly id: number }> {}
 
 const runnerFor = (layer: Layer.Layer<never, never, never>): RunEffect => {
   const runtime = ManagedRuntime.make(layer) as unknown as ManagedRuntime.ManagedRuntime<
@@ -57,5 +59,47 @@ describe('driveServerRec', () => {
     };
     const node = await driveServerRec(parent(), runnerFor(Layer.succeed(Stats)({ total: 7 })));
     expect(node).toEqual(['parent', 'child:7']);
+  });
+
+  it('renders a typed fallback when an effect fails (server .catch)', async () => {
+    const body = function* () {
+      yield* Effect.fail(new NotFound({ id: 1 }));
+      return 'never';
+    };
+    const handlers: CatchDispatch<string> = { NotFound: () => 'empty' };
+    const result = await driveServerRec(body(), runnerFor(Layer.empty), handlers);
+    expect(result).toBe('empty');
+  });
+
+  it('a placed child owns its failure — the parent does not catch it', async () => {
+    const childBody = function* () {
+      yield* Effect.fail(new NotFound({ id: 2 }));
+      return 'never';
+    };
+    const child: RecHandle<string> = {
+      body: childBody,
+      displayName: 'Child',
+      catchHandlers: { NotFound: () => 'child-empty' },
+    };
+    const parent = function* () {
+      const rendered = yield* placement(child, {});
+      return `parent:${rendered}`;
+    };
+    // The parent also handles NotFound, but the child's own handler wins and the
+    // parent never sees the failure — matching the client, where the child is a
+    // separate fiber this REC cannot catch.
+    const parentHandlers: CatchDispatch<string> = { NotFound: () => 'PARENT-CAUGHT' };
+    const node = await driveServerRec(parent(), runnerFor(Layer.empty), parentHandlers);
+    expect(node).toBe('parent:child-empty');
+  });
+
+  it('re-throws a failure whose tag it does not handle', async () => {
+    const body = function* () {
+      yield* Effect.fail(new NotFound({ id: 3 }));
+      return 'never';
+    };
+    // A dispatch for a different tag must not swallow this one.
+    const handlers: CatchDispatch<string> = { Other: () => 'nope' };
+    await expect(driveServerRec(body(), runnerFor(Layer.empty), handlers)).rejects.toThrow();
   });
 });

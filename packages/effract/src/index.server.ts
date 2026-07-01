@@ -38,7 +38,7 @@ export type {
 
 // --- components ---
 export { rec, RecTypeId } from '#infrastructure/rec-core.tsx';
-export type { REC, MissingServices, Effective } from '#infrastructure/rec-core.tsx';
+export type { REC, CatchHandlers, MissingServices, Effective } from '#infrastructure/rec-core.tsx';
 export { mount } from '#infrastructure/server/mount.ts';
 
 // --- the low-level server driver, for custom pipelines (per-request runtimes, Flight) ---

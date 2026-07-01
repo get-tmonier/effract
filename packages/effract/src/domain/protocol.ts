@@ -92,6 +92,15 @@ export type RecGenerator<A> = Generator<
 export type RecBody<Props, A> = (props: Props) => RecGenerator<A>;
 
 /**
+ * Runtime dispatch table for `.catch`: an error `_tag` maps to the node to
+ * render in that error's place. Renderer-agnostic in `A` — the domain never
+ * learns that a node is a React element; it only carries the mapping so both the
+ * client interpreter and the server driver can honour it. The typed, exhaustive
+ * shape users write (`CatchHandlers`) narrows to this at the `.catch` boundary.
+ */
+export type CatchDispatch<A> = Readonly<Record<string, (error: unknown) => A>>;
+
+/**
  * A stable handle to a component's body — the identity a placement points at.
  * The client keys its per-descriptor React component on this object (so a child
  * keeps a stable React type across re-renders); the server drives its `body`
@@ -101,6 +110,12 @@ export interface RecHandle<A> {
   // oxlint-disable-next-line typescript/no-explicit-any -- a stored body accepts whatever props its placement supplies; precise props are recovered at the call site.
   readonly body: (props: any) => RecGenerator<A>;
   readonly displayName: string;
+  /**
+   * Typed-error fallbacks for this REC, if it was `.catch`-wrapped: a failure
+   * from one of *its own* `yield*`ed effects whose `_tag` is present renders the
+   * mapped node instead of propagating. Absent for a plain REC.
+   */
+  readonly catchHandlers?: CatchDispatch<A>;
 }
 
 /** Brand identifying a child-REC placement instruction. */

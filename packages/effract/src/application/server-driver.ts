@@ -9,23 +9,38 @@
  * The body is identical to the one the client interprets; only who answers the
  * yields differs. That is the whole point: one component, two fibers.
  */
-import { isHook, isPlacement, type AnyEffect, type RecGenerator } from '#domain/protocol.ts';
+import {
+  isHook,
+  isPlacement,
+  type AnyEffect,
+  type CatchDispatch,
+  type RecGenerator,
+} from '#domain/protocol.ts';
 
 /** Runs an effect against the in-scope runtime, resolving services and async work. */
 export type RunEffect = (effect: AnyEffect) => Promise<unknown>;
 
 /**
- * Drive a REC body to its rendered node on the server. Three kinds of yield are
+ * Drive a REC body to its rendered node on the server. Four kinds of yield are
  * honoured, mirroring the client interpreter:
  *
  *   - a child placement (`yield* Child`) → the child's body is driven *inline*
- *     against the same runtime, so a universal REC composed of universal RECs
- *     renders entirely on the server, with no client JavaScript.
- *   - an Effect/service → awaited against the request's runtime.
+ *     against the same runtime, under the child's *own* `.catch` handlers, so a
+ *     universal REC composed of universal RECs renders entirely on the server
+ *     with no client JavaScript — and a parent never swallows a child's errors.
+ *   - an Effect/service → awaited against the request's runtime. If it fails and
+ *     this REC declared a `.catch` for that error's `_tag` (via `handlers`), the
+ *     mapped node is rendered in place; otherwise the failure propagates.
  *   - a hook → rejected: React Server Components have no render-pass hooks (this
  *     is React's rule, not effract's), so a hook-bearing body is a client REC.
+ *
+ * `handlers` is this REC's typed-error dispatch, or `undefined` for a plain REC.
  */
-export const driveServerRec = async <A>(gen: RecGenerator<A>, run: RunEffect): Promise<A> => {
+export const driveServerRec = async <A>(
+  gen: RecGenerator<A>,
+  run: RunEffect,
+  handlers?: CatchDispatch<A>,
+): Promise<A> => {
   let step = gen.next();
   while (!step.done) {
     const instruction = step.value;
@@ -37,13 +52,51 @@ export const driveServerRec = async <A>(gen: RecGenerator<A>, run: RunEffect): P
       );
     }
     if (isPlacement(instruction)) {
-      const node = await driveServerRec(instruction.rec.body(instruction.props), run);
+      // The child owns its failures: it is driven under its own handlers, so an
+      // unhandled child error propagates past this REC — as it would on the
+      // client, where the child is a separate fiber this `.catch` cannot see.
+      const node = await driveServerRec(
+        instruction.rec.body(instruction.props),
+        run,
+        instruction.rec.catchHandlers as CatchDispatch<unknown> | undefined,
+      );
       step = gen.next(node);
       continue;
     }
     // Hooks and placements are handled above, so this is an Effect.
-    const value = await run(instruction);
+    let value: unknown;
+    try {
+      value = await run(instruction);
+    } catch (thrown) {
+      const node = handleServerFailure(thrown, handlers);
+      if (node.handled) {
+        return node.value;
+      }
+      throw thrown;
+    }
     step = gen.next(value);
   }
   return step.value;
+};
+
+/**
+ * Match a failed effect against this REC's `.catch` dispatch. On the server a
+ * failure is a rejected promise (no Suspense, no thenables to guard), so this is
+ * the sync `_tag` lookup: a named tag renders its node; anything else — a defect
+ * or an unnamed tag — is left for the caller to re-throw.
+ */
+const handleServerFailure = <A>(
+  thrown: unknown,
+  handlers: CatchDispatch<A> | undefined,
+): { readonly handled: true; readonly value: A } | { readonly handled: false } => {
+  if (handlers !== undefined && typeof thrown === 'object' && thrown !== null) {
+    const tag = (thrown as { readonly _tag?: unknown })._tag;
+    if (typeof tag === 'string') {
+      const handler = handlers[tag];
+      if (handler !== undefined) {
+        return { handled: true, value: handler(thrown) };
+      }
+    }
+  }
+  return { handled: false };
 };

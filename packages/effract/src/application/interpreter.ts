@@ -17,7 +17,13 @@
 import * as Cause from 'effect/Cause';
 import * as Effect from 'effect/Effect';
 import * as Exit from 'effect/Exit';
-import { isHook, isPlacement, type AnyEffect, type RecGenerator } from '#domain/protocol.ts';
+import {
+  isHook,
+  isPlacement,
+  type AnyEffect,
+  type CatchDispatch,
+  type RecGenerator,
+} from '#domain/protocol.ts';
 import type { InterpreterDeps } from '#application/ports.ts';
 
 interface DriveState {
@@ -84,4 +90,48 @@ export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
     step = gen.next(result);
   }
   return step.value;
+};
+
+/** A thenable — how React's `use` signals a suspension. Never a typed failure. */
+const isThenable = (u: unknown): u is PromiseLike<unknown> =>
+  typeof u === 'object' && u !== null && typeof (u as { then?: unknown }).then === 'function';
+
+/**
+ * Drive a REC body, rendering a typed fallback for a failure it declared via
+ * `.catch`. A yielded effect that fails surfaces here as a thrown tagged error —
+ * the *same* instance whether it failed synchronously (`Cause.squash`) or
+ * asynchronously (React's `use` re-throwing the settled rejection). If its
+ * `_tag` names a handler, the handler's node is rendered in place; anything else
+ * is re-thrown untouched, so Suspense signals still suspend, defects still reach
+ * the nearest error boundary, and an unhandled tag stays a real error. Without a
+ * dispatch this is exactly `driveRec`.
+ */
+export const driveRecCaught = <A>(
+  gen: RecGenerator<A>,
+  deps: InterpreterDeps,
+  handlers: CatchDispatch<A> | undefined,
+): A => {
+  if (handlers === undefined) {
+    return driveRec(gen, deps);
+  }
+  try {
+    return driveRec(gen, deps);
+  } catch (thrown) {
+    // A suspension (thenable thrown by `use`) must propagate so React can wait.
+    if (isThenable(thrown)) {
+      throw thrown;
+    }
+    const tag =
+      typeof thrown === 'object' && thrown !== null
+        ? (thrown as { readonly _tag?: unknown })._tag
+        : undefined;
+    if (typeof tag === 'string') {
+      const handler = handlers[tag];
+      if (handler !== undefined) {
+        return handler(thrown);
+      }
+    }
+    // A defect or an error tag this REC did not name — not ours to swallow.
+    throw thrown;
+  }
 };
