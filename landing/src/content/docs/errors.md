@@ -12,10 +12,10 @@ compile-checked** map of fallbacks — one per error `_tag`, each handed exactly
 ## `.catch`
 
 ```tsx
-import { rec } from '@tmonier/effract';
+import { rec, query } from '@tmonier/effract';
 
 const Profile = rec(function* () {
-  const user = yield* fetchUser(id); // E = NotFound | Unauthorized
+  const user = yield* query(fetchUser(id), id); // E = NotFound | Unauthorized
   return <Card user={user} />;
 }).catch({
   NotFound: () => <Empty />,
@@ -32,12 +32,28 @@ The handler map is exhaustive over the error channel and checked by the compiler
 `.catch` returns a **plain REC** — its declared failures discharged — so you `yield*` or `mount` it like
 any other. A REC that cannot fail with a tagged error takes `.catch({})`.
 
+## Errors and loading are separate channels
+
+A REC's type carries failures in `E` and loading in `S`, and they discharge independently: `.catch`
+handles the errors, [`.suspense`](/docs/loading/) handles the loading. The `query` above fetches async
+data, so `Profile` carries **both** — chain the two, declaratively:
+
+```tsx
+const Profile = rec(function* () {
+  const user = yield* query(fetchUser(id), id);
+  return <Card user={user} />;
+})
+  .catch({ NotFound: () => <Empty />, Unauthorized: () => <Login /> }) // errors → UI
+  .suspense(<Spinner />); // loading → UI
+```
+
 ## Sync and async, uniformly
 
-A failing effect surfaces the same tagged error whether it failed synchronously or asynchronously — a
-sync failure is thrown during render, an async one is re-thrown through Suspense once its promise
-settles. `.catch` renders the matching fallback either way. During the async wait the component simply
-suspends, so a `<Suspense>` boundary above it shows its fallback until the value (or the failure) arrives.
+A failing effect surfaces the same tagged error whether it failed synchronously (a bare `yield* effect`,
+thrown during render) or asynchronously (a `query`, re-thrown once its promise settles). `.catch`
+renders the matching fallback either way. During an async wait the component suspends, so its
+[`.suspense`](/docs/loading/) boundary — or a plain `<Suspense>` above it — shows the loading fallback
+until the value, or the failure, arrives.
 
 ## What `.catch` does not swallow
 
