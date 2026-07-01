@@ -1,10 +1,15 @@
 /**
- * Recipe 03 — async data, suspended.
+ * Recipe 03 — async data, suspended (the raw escape hatch).
  *
  * Reading an asynchronous effect with `yield*` suspends the component through
  * React Suspense and resumes inline once the value is ready. There is no
  * `useEffect`, no `isLoading` flag, no manual state machine — the runtime and
  * React do the waiting.
+ *
+ * This is the *escape hatch*: it suspends, but nothing tracks it, so you bring
+ * your own `<Suspense>`. For real async data reach for `query` (recipe 09) — it
+ * carries a loading obligation the type makes you handle, refetches on a key, and
+ * cancels on unmount. `derive.effect` (recipe 11) is the same, held in a service.
  */
 import { Suspense, type ReactNode } from 'react';
 import * as Context from 'effect/Context';

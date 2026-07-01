@@ -60,27 +60,14 @@ const Banner = rec(function* () {
 });
 ```
 
-## Async and Suspense
+## Beyond reading a service
 
-Reading an asynchronous effect suspends the component through React Suspense and resumes inline when
-the value is ready — no `useEffect`, no `isLoading` flag:
+A REC does more than read a service synchronously — but each of those concerns has its own page, so a
+component body stays about structure:
 
-```tsx
-const Profile = rec(function* () {
-  const api = yield* Api;
-  const user = yield* api.fetchUser(); // suspends here
-  return <h2>Welcome, {user.name}</h2>;
-});
-
-// <Suspense> is a host element (plain JSX); the Profile REC is placed by yielding it
-const Account = rec(function* () {
-  return <Suspense fallback={<Spinner />}>{yield* Profile}</Suspense>;
-});
-```
-
-That raw form is the escape hatch: it suspends, but nothing tracks it. For real async data, wrap the
-effect in [`query`](/docs/loading/) — it dedupes, refetches on key, cancels on unmount, and records a
-loading obligation the type system makes you handle. See [Loading & queries](/docs/loading/).
-
-A REC's typed failures can be rendered as UI with [`.catch`](/docs/errors/) — one fallback per error
-`_tag`, checked exhaustively. Anything you don't handle is thrown to the nearest React error boundary.
+- **Reactive state** — hold `atom`s in a service and read them with `yield*`; the component re-renders
+  precisely when one changes. See [Reactivity](/docs/signals/).
+- **Async data** — `query` suspends for a value, refetches when its key changes, and records a loading
+  obligation the type system makes you handle. See [Loading & queries](/docs/loading/).
+- **Typed failures** — render an exhaustive, compile-checked fallback per error `_tag` with `.catch`.
+  See [Typed errors](/docs/errors/).

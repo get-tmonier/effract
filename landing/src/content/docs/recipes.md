@@ -2,7 +2,7 @@
 title: Recipes & examples
 description: Copy-pasteable call sites and four full framework integrations.
 group: Advanced
-order: 2
+order: 1
 ---
 
 The repository ships twelve self-contained, typechecked **recipes** — one call-site pattern per file —

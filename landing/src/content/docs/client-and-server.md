@@ -2,7 +2,7 @@
 title: Client & server
 description: One mount, from one package, renders interactively or on the server — you never choose.
 group: Core
-order: 3
+order: 6
 ---
 
 There is no separate server package and no separate server API. You render a REC on the server with the
@@ -63,6 +63,8 @@ export default mount(AppLive, StatsBadge);
 ```
 
 > **The one rule, enforced at compile time.** A hook-bearing REC can't be a Server Component — RSC has
-> no hooks. You can't get it wrong: `hook`, `observe`, and `atom` **aren't exported from the server
-> build**, so reaching for one in a Server Component is a compile error (_"`hook` is not exported"_).
-> Move the component to a `'use client'` module and it's a client island again.
+> no hooks. You can't get it wrong: the hooks — `hook`, `observe`, `useAtom` — **aren't exported from
+> the server build**, so reaching for one in a Server Component is a compile error (_"`hook` is not
+> exported"_). (`atom` / `derive` _are_ exported there — reactive state is React-free, so a service can
+> hold it on the server too; only _reading_ an atom in a component needs a hook.) Move the component to
+> a `'use client'` module and it's a client island again.
