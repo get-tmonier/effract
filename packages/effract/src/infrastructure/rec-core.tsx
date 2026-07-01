@@ -12,8 +12,9 @@
  *
  * A REC is still **not** a React element type — `<Rec />` is a compile error by
  * design. You compose RECs the way you compose Effects: with `yield*`, which is
- * how a child's Effect requirements (`R`) bubble up the tree to the one place
- * that knows the runtime (`mount`), where they are verified at compile time.
+ * how a child's Effect requirements (`R`) and loading obligation (`S`) bubble up
+ * the tree to the one place that knows the runtime (`mount`), where they are
+ * verified at compile time.
  */
 import type { ReactNode } from 'react';
 import {
@@ -26,6 +27,8 @@ import {
   type RecHandle,
   type RecPlacement,
   type RequirementsOf,
+  type Suspensable,
+  type SuspendsOf,
 } from '#domain/protocol.ts';
 
 /** Brand identifying a React Effect Component. */
@@ -48,10 +51,17 @@ export type CatchHandlers<E, A = ReactNode> = {
   readonly [Tag in Extract<E, Tagged>['_tag']]: (error: Extract<E, { readonly _tag: Tag }>) => A;
 };
 
-interface RecCore<P, E, R> extends RecHandle<ReactNode> {
+/** Any yieldable a REC body may produce — the constraint `rec` infers `Eff` against. */
+type AnyYield =
+  | AnyEffect
+  | Hook<unknown>
+  | RecPlacement<ReactNode, unknown, unknown>
+  | Suspensable<unknown, unknown, unknown>;
+
+interface RecCore<P, E, R, S> extends RecHandle<ReactNode> {
   readonly [RecTypeId]: true;
   /** Place this REC with props: `yield* Child.with({ ... })`. */
-  with(props: P): RecPlacement<ReactNode, R>;
+  with(props: P): RecPlacement<ReactNode, R, S>;
   /**
    * Render a typed fallback for each error this REC's body can fail with. The
    * handler map is exhaustive over the error channel `E` and checked at compile
@@ -61,7 +71,7 @@ interface RecCore<P, E, R> extends RecHandle<ReactNode> {
    *
    * ```tsx
    * const Profile = rec(function* () {
-   *   const user = yield* fetchUser(id); // E = NotFound | Unauthorized
+   *   const user = yield* query(fetchUser(id), id); // E = NotFound | Unauthorized
    *   return <Card user={user} />;
    * }).catch({
    *   NotFound: () => <Empty />,
@@ -69,58 +79,79 @@ interface RecCore<P, E, R> extends RecHandle<ReactNode> {
    * });
    * ```
    *
-   * Returns a plain REC — `yield*` it anywhere — whose error channel keeps only
-   * the non-tagged remainder (usually `never`), reflecting that its tagged
-   * failures are now handled. It catches *this* REC's own `yield*`ed effects; a
-   * child REC handles its own failures (wrap the child in `.catch` too).
+   * Returns a REC whose error channel keeps only the non-tagged remainder
+   * (usually `never`); the loading obligation `S` is untouched. It catches *this*
+   * REC's own `yield*`ed failures; a child REC handles its own (wrap it too).
    */
-  catch(handlers: CatchHandlers<E>): REC<P, UntaggedErrors<E>, R>;
+  catch(handlers: CatchHandlers<E>): REC<P, UntaggedErrors<E>, R, S>;
+  /**
+   * Handle this REC's loading state. A REC that `yield*`s a `suspend`/`query`
+   * carries a loading obligation `S`; `.suspense(fallback)` discharges it by
+   * placing the REC in a real `<Suspense>` boundary, so while it is pending the
+   * `fallback` renders in its place.
+   *
+   * ```tsx
+   * const Page = Profile.suspense(<Skeleton />); // Page: REC<…, never> — obligation met
+   * ```
+   *
+   * Returns a REC with `S` back to `never`. One `.suspense` discharges the whole
+   * subtree beneath it (React Suspense catches every descendant that suspends),
+   * so a single boundary — at any ancestor, or at `mount` via `{ loading }` —
+   * satisfies the obligation the type system otherwise bubbles all the way up.
+   */
+  suspense(fallback: ReactNode): REC<P, E, R, never>;
 }
 
-interface RecBareYield<R> {
+interface RecBareYield<R, S> {
   /** Place this REC without props: `yield* Child`. */
-  [Symbol.iterator](): Iterator<RecPlacement<ReactNode, R>, ReactNode>;
+  [Symbol.iterator](): Iterator<RecPlacement<ReactNode, R, S>, ReactNode>;
 }
 
 /**
- * A React Effect Component. Yieldable (so `R` propagates), never a JSX element
- * type — `<Rec />` is a compile error by design. Props-free RECs can be yielded
- * directly (`yield* Child`); RECs with props use `yield* Child.with(props)`. The
- * error channel `E` carries the tagged failures its body can raise, which
- * `.catch` renders and discharges.
+ * A React Effect Component. Yieldable (so `R` and `S` propagate), never a JSX
+ * element type — `<Rec />` is a compile error by design. Props-free RECs can be
+ * yielded directly (`yield* Child`); RECs with props use `yield* Child.with(p)`.
+ * `E` carries the tagged failures its body can raise (`.catch` discharges them);
+ * `S` carries an unhandled loading obligation (`.suspense` discharges it).
  */
-export type REC<P, E, R> = RecCore<P, E, R> &
-  ([Record<never, never>] extends [P] ? RecBareYield<R> : unknown);
+export type REC<P, E, R, S> = RecCore<P, E, R, S> &
+  ([Record<never, never>] extends [P] ? RecBareYield<R, S> : unknown);
 
-const makeRec = <P extends object, E, R>(
+const makeRec = <P extends object, E, R, S>(
   body: RecBody<P, ReactNode>,
   name: string,
   catchHandlers?: CatchDispatch<ReactNode>,
-): REC<P, E, R> => {
+  suspenseFallback?: ReactNode,
+): REC<P, E, R, S> => {
   // A `(props: P) => ...` body widens to the handle's `(props: any) => ...` for
   // free (parameter bivariance), so no assertion is needed to store it.
-  const rec: RecCore<P, E, R> & RecBareYield<R> = {
+  const rec: RecCore<P, E, R, S> & RecBareYield<R, S> = {
     [RecTypeId]: true,
     body,
     displayName: name,
-    // `exactOptionalPropertyTypes`: only carry the key when a dispatch exists,
-    // so a plain REC has no `catchHandlers` property rather than an undefined one.
+    // `exactOptionalPropertyTypes`: only carry a key when its value exists, so a
+    // plain REC has no `catchHandlers`/`suspenseFallback` rather than undefined ones.
     ...(catchHandlers === undefined ? {} : { catchHandlers }),
-    with(props: P): RecPlacement<ReactNode, R> {
-      return placement<ReactNode, R>(rec, props);
+    ...(suspenseFallback === undefined ? {} : { suspenseFallback }),
+    with(props: P): RecPlacement<ReactNode, R, S> {
+      return placement<ReactNode, R, S>(rec, props);
     },
-    catch(handlers: CatchHandlers<E>): REC<P, UntaggedErrors<E>, R> {
+    catch(handlers: CatchHandlers<E>): REC<P, UntaggedErrors<E>, R, S> {
       // A handler is only ever invoked with the error whose `_tag` selected it,
       // so erasing the per-tag parameter to `unknown` for storage is sound; the
       // precise error type is recovered structurally at each `.catch` call site.
-      return makeRec<P, UntaggedErrors<E>, R>(
+      return makeRec<P, UntaggedErrors<E>, R, S>(
         body,
         name,
         handlers as unknown as CatchDispatch<ReactNode>,
+        suspenseFallback,
       );
     },
-    [Symbol.iterator](): Iterator<RecPlacement<ReactNode, R>, ReactNode> {
-      return placement<ReactNode, R>(rec, {})[Symbol.iterator]();
+    suspense(fallback: ReactNode): REC<P, E, R, never> {
+      return makeRec<P, E, R, never>(body, name, catchHandlers, fallback);
+    },
+    [Symbol.iterator](): Iterator<RecPlacement<ReactNode, R, S>, ReactNode> {
+      return placement<ReactNode, R, S>(rec, {})[Symbol.iterator]();
     },
   };
   Object.defineProperty(rec, 'name', { value: name });
@@ -129,37 +160,37 @@ const makeRec = <P extends object, E, R>(
 
 /**
  * Define a React Effect Component. The body is a generator that may `yield*`
- * Effect services and effects, `yield* hook(...)` for React hooks, and
- * `yield* Child` / `yield* Child.with(props)` to place other RECs.
+ * Effect services and effects, `yield* hook(...)` for React hooks, `yield*
+ * suspend(...)` / `query(...)` for async data, and `yield* Child` / `yield* Child.with(props)` to
+ * place other RECs.
  *
  * The returned descriptor is server-safe: the same `mount(...)` renders a
  * hook-free body on the server, and the very same value mounts on the client.
  * Only a body that itself imports client-only APIs (React hooks) makes its
  * *module* client-only — the `rec` wrapper never does.
  */
-export function rec<
-  Eff extends AnyEffect | Hook<unknown> | RecPlacement<ReactNode, unknown>,
-  A extends ReactNode,
->(
+export function rec<Eff extends AnyYield, A extends ReactNode>(
   body: () => Generator<Eff, A, never>,
-): REC<Record<never, never>, ErrorsOf<Eff>, RequirementsOf<Eff>>;
-export function rec<
-  Eff extends AnyEffect | Hook<unknown> | RecPlacement<ReactNode, unknown>,
-  A extends ReactNode,
-  Props extends object,
->(body: (props: Props) => Generator<Eff, A, never>): REC<Props, ErrorsOf<Eff>, RequirementsOf<Eff>>;
-export function rec<
-  Eff extends AnyEffect | Hook<unknown> | RecPlacement<ReactNode, unknown>,
-  A extends ReactNode,
-  Props extends object,
->(
+): REC<Record<never, never>, ErrorsOf<Eff>, RequirementsOf<Eff>, SuspendsOf<Eff>>;
+export function rec<Eff extends AnyYield, A extends ReactNode, Props extends object>(
   body: (props: Props) => Generator<Eff, A, never>,
-): REC<Props, ErrorsOf<Eff>, RequirementsOf<Eff>> {
-  return makeRec<Props, ErrorsOf<Eff>, RequirementsOf<Eff>>(body, body.name || 'EffractComponent');
+): REC<Props, ErrorsOf<Eff>, RequirementsOf<Eff>, SuspendsOf<Eff>>;
+export function rec<Eff extends AnyYield, A extends ReactNode, Props extends object>(
+  body: (props: Props) => Generator<Eff, A, never>,
+): REC<Props, ErrorsOf<Eff>, RequirementsOf<Eff>, SuspendsOf<Eff>> {
+  return makeRec<Props, ErrorsOf<Eff>, RequirementsOf<Eff>, SuspendsOf<Eff>>(
+    body,
+    body.name || 'EffractComponent',
+  );
 }
 
 /** A type error naming the services a runtime is missing for a REC's tree. */
 export type MissingServices<Missing> = readonly ['effract: runtime is missing', Missing];
+
+/** A type error demanding a loading fallback for a tree that can still suspend. */
+export type LoadingNotHandled = readonly [
+  'effract: loading not handled — add .suspense(fallback), or mount(layer, root, { loading })',
+];
 
 /**
  * A no-service tree's requirement infers as `unknown` (Effect's requirement

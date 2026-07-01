@@ -12,6 +12,7 @@
 import {
   isHook,
   isPlacement,
+  isSuspensable,
   type AnyEffect,
   type CatchDispatch,
   type RecGenerator,
@@ -31,6 +32,9 @@ export type RunEffect = (effect: AnyEffect) => Promise<unknown>;
  *   - an Effect/service → awaited against the request's runtime. If it fails and
  *     this REC declared a `.catch` for that error's `_tag` (via `handlers`), the
  *     mapped node is rendered in place; otherwise the failure propagates.
+ *   - a suspensable (`yield* suspend(...)` / `query(...)`) → awaited inline,
+ *     exactly like an effect; there is no loading state on the server (it
+ *     resolves before the HTML is sent), so it is just its effect, `.catch`-handled.
  *   - a hook → rejected: React Server Components have no render-pass hooks (this
  *     is React's rule, not effract's), so a hook-bearing body is a client REC.
  *
@@ -63,10 +67,11 @@ export const driveServerRec = async <A>(
       step = gen.next(node);
       continue;
     }
-    // Hooks and placements are handled above, so this is an Effect.
+    // A suspensable is its effect here; an effect is itself. Either way, run and catch.
+    const effect = isSuspensable(instruction) ? instruction.effect : instruction;
     let value: unknown;
     try {
-      value = await run(instruction);
+      value = await run(effect);
     } catch (thrown) {
       const node = handleServerFailure(thrown, handlers);
       if (node.handled) {

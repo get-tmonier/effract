@@ -20,6 +20,7 @@ import * as Exit from 'effect/Exit';
 import {
   isHook,
   isPlacement,
+  isSuspensable,
   type AnyEffect,
   type CatchDispatch,
   type RecGenerator,
@@ -27,7 +28,10 @@ import {
 import type { InterpreterDeps } from '#application/ports.ts';
 
 interface DriveState {
+  /** Encounter counter for suspended async effects (the load-once cache). */
   index: number;
+  /** Encounter counter for queries (keys the resolver's cross-render cache). */
+  queryIndex: number;
 }
 
 /**
@@ -70,10 +74,10 @@ const resolveEffect = (effect: AnyEffect, deps: InterpreterDeps, state: DriveSta
  * Run a React Effect Component body to its rendered result. Creates a fresh
  * generator per render (generators are single-use); a Suspense retry simply
  * runs this again from the top, replaying hooks in order and hitting the async
- * cache for already-started work.
+ * cache and the query resolver for already-started work.
  */
 export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
-  const state: DriveState = { index: 0 };
+  const state: DriveState = { index: 0, queryIndex: 0 };
   let step = gen.next();
   while (!step.done) {
     const instruction = step.value;
@@ -84,6 +88,11 @@ export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
     } else if (isPlacement(instruction)) {
       // A child REC: hand it to the renderer to place as a real React child.
       result = deps.placer.place(instruction);
+    } else if (isSuspensable(instruction)) {
+      // Async data (suspend/query): the resolver suspends for it, refetches on
+      // key, and (backed by a cross-render store) interrupts on unmount. Keyed by
+      // encounter order.
+      result = deps.suspensableResolver.resolve(instruction, state.queryIndex++);
     } else {
       result = resolveEffect(instruction, deps, state);
     }
