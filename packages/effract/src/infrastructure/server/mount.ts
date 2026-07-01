@@ -56,9 +56,9 @@ const runtimeFor = <ROut, E>(layer: Layer.Layer<ROut, E, never>): ServerRuntime 
  * the call site. Hook-bearing bodies reject at render (a hook is a client concept
  * RSC forbids); those RECs are client islands and render wherever the browser is.
  */
-export function mount<ROut, E, R>(
-  layer: Layer.Layer<ROut, E, never>,
-  rec: REC<Record<never, never>, R> &
+export function mount<ROut, LE, RE, R>(
+  layer: Layer.Layer<ROut, LE, never>,
+  rec: REC<Record<never, never>, RE, R> &
     ([Effective<R>] extends [ROut] ? unknown : MissingServices<Exclude<Effective<R>, ROut>>),
 ): () => Promise<ReactNode> {
   const Root = (): Promise<ReactNode> => {
@@ -67,8 +67,10 @@ export function mount<ROut, E, R>(
     // signature has already proven `layer` provides the tree's services. Coercing
     // the erased effect to what this runtime accepts is the one Effect-boundary
     // step — and it lives here, once, not at any call site.
-    return driveServerRec(rec.body({}), (effect) =>
-      runtime.runPromise(effect as Parameters<typeof runtime.runPromise>[0]),
+    return driveServerRec(
+      rec.body({}),
+      (effect) => runtime.runPromise(effect as Parameters<typeof runtime.runPromise>[0]),
+      rec.catchHandlers,
     );
   };
   Object.defineProperty(Root, 'name', { value: rec.displayName });

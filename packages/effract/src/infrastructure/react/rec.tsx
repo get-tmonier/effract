@@ -30,7 +30,7 @@ import {
   type ReactNode,
 } from 'react';
 import type * as Layer from 'effect/Layer';
-import { driveRec } from '#application/interpreter.ts';
+import { driveRecCaught } from '#application/interpreter.ts';
 import type { Placer, RenderCache, Suspender } from '#application/ports.ts';
 import type { RecHandle, RecPlacement } from '#domain/protocol.ts';
 import type { Effective, MissingServices, REC } from '#infrastructure/rec-core.tsx';
@@ -63,7 +63,11 @@ const clientFcFor = (handle: RecHandle<ReactNode>): FunctionComponent<object> =>
     const executor = useExecutor();
     const suspender = useSuspender();
     const cache = useRenderCache();
-    return driveRec(handle.body(props), { executor, suspender, cache, placer: clientPlacer });
+    return driveRecCaught(
+      handle.body(props),
+      { executor, suspender, cache, placer: clientPlacer },
+      handle.catchHandlers,
+    );
   };
   Object.defineProperty(fc, 'name', { value: handle.displayName });
   fcCache.set(handle, fc);
@@ -97,11 +101,11 @@ const clientPlacer: Placer = {
  * You import `mount` from `@tmonier/effract` in every file; where the module
  * runs decides whether it renders interactively (here) or on the server.
  */
-export function mount<ROut, E, R>(
-  layer: Layer.Layer<ROut, E, never>,
-  rec: REC<Record<never, never>, R> &
+export function mount<ROut, LE, RE, R>(
+  layer: Layer.Layer<ROut, LE, never>,
+  rec: REC<Record<never, never>, RE, R> &
     ([Effective<R>] extends [ROut] ? unknown : MissingServices<Exclude<Effective<R>, ROut>>),
 ): ReactNode {
   const root = createElement(clientFcFor(rec as unknown as RecHandle<ReactNode>), {});
-  return createElement(Runtime<ROut, E>, { layer }, root);
+  return createElement(Runtime<ROut, LE>, { layer }, root);
 }
