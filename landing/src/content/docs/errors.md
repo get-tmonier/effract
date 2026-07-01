@@ -55,6 +55,25 @@ renders the matching fallback either way. During an async wait the component sus
 [`.suspense`](/docs/loading/) boundary — or a plain `<Suspense>` above it — shows the loading fallback
 until the value, or the failure, arrives.
 
+## Recovery is automatic
+
+`.catch` renders the fallback in place of the component, and **recovers on its own** when the inputs that
+failed change: navigate to a product that exists and the REC re-renders and refetches — no retry button,
+no reset key to wire up. It works because effract watches the atoms the body read (a `query`'s key inputs
+among them) and re-runs the REC when one changes.
+
+```tsx
+const ProductView = rec(function* () {
+  const id = yield* route.productId;
+  const product = yield* query(catalog.product(id), id); // fails for a missing id
+  return <Panel product={product} />;
+}).catch({ NotFound: () => <Empty /> });
+// #9 → <Empty/>; click #1 → the query re-runs and the product renders.
+```
+
+The order of your `yield*`s doesn't matter — a failure part-way through the body is handled the same way
+wherever the failing yield sits.
+
 ## What `.catch` does not swallow
 
 `.catch` handles a REC's **own** `yield*`ed failures. It deliberately leaves three things alone:
