@@ -8,9 +8,9 @@
  * uses for a yielded atom. Owning a signal in a service needs no React; only
  * *reading one in the render pass* does — which is why this half is `'use client'`.
  *
- *   const doubled = observe(($) => $(count) * 2);   // hook: derived read
- *   <Observe>{($) => <b>{$(count)}</b>}</Observe>   // the same, inline in JSX
+ *   const n = useAtomValue(count);                  // read one atom (re-renders on change)
  *   const [n, setN] = useAtom(count);               // read + write, useState-shaped
+ *   <Observe>{($) => <b>{$(count)}</b>}</Observe>   // an inline reactive expression in JSX
  */
 import { useCallback, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import type { Atom, ReadableAtom } from '#domain/protocol.ts';
@@ -18,9 +18,11 @@ import type { Reader } from '#application/ports.ts';
 import { computation, type Computation, type Read } from '#infrastructure/reactivity-core.ts';
 
 /**
- * Subscribe a component to a derived view over one or more atoms — the hook form,
- * for inline use. Re-renders precisely when a read atom changes. Prefer `derive`
- * for values shared across components, and `<Observe>` for inline JSX.
+ * Subscribe a component to an inline derived view over one or more atoms. Re-renders
+ * precisely when a read atom changes. This is the escape hatch for an ad-hoc reactive
+ * expression in a component; prefer reading a single atom with {@link useAtomValue}
+ * (or `yield*` in a REC), and deriving shared values with `atom.derive` / `derive` in
+ * a service. `<Observe>` is the same thing, inline in JSX.
  *
  * ```tsx
  * const doubled = observe(($) => $(count) * 2);

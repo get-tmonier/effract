@@ -184,6 +184,17 @@ export interface ReadableAtom<out A> {
   readonly value: A;
   /** Subscribe to changes; returns an unsubscribe. Backs the in-render read. */
   subscribe(listener: () => void): () => void;
+  /**
+   * Derive a new read-only atom from *this one's* value — the ergonomic,
+   * single-source form of `derive`. The callback receives the value directly (no
+   * `$`), and the result recomputes when this atom changes; chain it freely.
+   * For a value computed from *several* atoms, reach for the free `derive(($) => …)`.
+   *
+   * ```ts
+   * const count = items.derive((list) => list.length);
+   * ```
+   */
+  derive<B>(f: (value: A) => B): ReadableAtom<B>;
   [Symbol.iterator](): Iterator<ReadableAtom<A>, A>;
 }
 

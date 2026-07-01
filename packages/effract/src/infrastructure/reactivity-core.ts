@@ -125,6 +125,7 @@ export const atom = <A>(initial: A): Atom<A> => {
         listeners.delete(listener);
       };
     },
+    derive: (f) => deriveReadonly((read) => f(read(self))),
     [Symbol.iterator]: () => yieldSelf(self),
   };
   return self;
@@ -279,6 +280,7 @@ const deriveReadonly = <A>(selector: (read: Read) => A): ReadableAtom<A> => {
       return comp.get();
     },
     subscribe: (listener) => comp.subscribe(listener),
+    derive: (f) => deriveReadonly((read) => f(read(self))),
     [Symbol.iterator]: () => yieldSelf(self),
   };
   return self;
@@ -308,6 +310,7 @@ const deriveWritable = <A>(selector: (read: Read) => A, write: (value: A) => voi
     set: (value) => write(value),
     update: (update) => write(update(comp.get())),
     subscribe: (listener) => comp.subscribe(listener),
+    derive: (f) => deriveReadonly((read) => f(read(self))),
     [Symbol.iterator]: () => yieldSelf(self),
   };
   return self;
@@ -380,14 +383,17 @@ const deriveEffect = <A, E, R>(
 };
 
 /**
- * Create a *derived* atom: a read-only reactive value computed from other atoms.
- * `$` tracks exactly the atoms the selector reads, so the derived value
- * recomputes — and its readers re-render — precisely when a tracked atom changes.
- * Derived atoms compose: one may read another. Keep derivation here, in the
- * Effect world, rather than recomputing it in a component.
+ * Create a *derived* atom from *several* atoms: a read-only reactive value whose
+ * `$` tracks exactly the atoms the selector reads, so it recomputes — and its
+ * readers re-render — precisely when a tracked atom changes. Derived atoms
+ * compose. Keep derivation here, in the Effect world, not in a component.
+ *
+ * For the common case of deriving from a *single* atom, prefer the method form
+ * {@link ReadableAtom.derive | `atom.derive`} — it hands you the value directly,
+ * with no `$`: `const count = items.derive((list) => list.length)`.
  *
  * ```ts
- * const total = derive(($) => $(items).reduce((sum, x) => sum + x.price, 0));
+ * const total = derive(($) => $(price) * $(qty)); // several sources → the $ form
  * ```
  *
  * {@link deriveWritable | `derive.writable`} adds a two-way variant;

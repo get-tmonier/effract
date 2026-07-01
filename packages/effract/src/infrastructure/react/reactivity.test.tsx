@@ -168,6 +168,22 @@ describe('reactivity', () => {
     expect(doubled.value).toBe(10);
   });
 
+  it('atom.derive derives from one atom without $, recomputes, and chains', () => {
+    const items = atom<ReadonlyArray<{ price: number }>>([{ price: 3 }, { price: 4 }]);
+    const count = items.derive((list) => list.length); // the value, handed over directly
+    const total = items.derive((list) => list.reduce((n, item) => n + item.price, 0));
+    const withTax = total.derive((t) => Math.round(t * 1.1)); // chains off a derived atom
+
+    expect(count.value).toBe(2);
+    expect(total.value).toBe(7);
+    expect(withTax.value).toBe(8); // 7 * 1.1 = 7.7 → 8
+
+    items.update((list) => [...list, { price: 3 }]);
+    expect(count.value).toBe(3);
+    expect(total.value).toBe(10);
+    expect(withTax.value).toBe(11); // 10 * 1.1 = 11
+  });
+
   it('an unchanged write (by Equal) notifies no one', () => {
     const n = atom(1);
     let notifications = 0;
