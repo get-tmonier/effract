@@ -14,6 +14,7 @@
  *   10  derived state — `derive` (computed) + `derive.writable` (two-way)
  *   11  async derived state — `derive.effect` suspends and refetches
  *   12  atom collections & batching — `atomFamily` + `batch`
+ *   13  an API-backed service — query results, subscribed via atoms (`derive.effect`)
  */
 export * as Service from './01-service.tsx';
 export * as HooksAndServices from './02-hooks-and-services.tsx';
@@ -27,3 +28,4 @@ export * as QueryAndLoading from './09-query-and-loading.tsx';
 export * as DerivedState from './10-derived-state.tsx';
 export * as AsyncDerived from './11-async-derived.tsx';
 export * as AtomCollections from './12-atom-collections.tsx';
+export * as ApiService from './13-api-service.tsx';
