@@ -31,7 +31,7 @@ const ThermostatLive = Layer.sync(Thermostat)(() => {
     ($) => $(celsius) * 1.8 + 32,
     (f) => celsius.set(Math.round((f - 32) / 1.8)),
   );
-  const label = derive(($) => ($(celsius) < 18 ? 'cold' : $(celsius) > 24 ? 'warm' : 'comfy'));
+  const label = celsius.derive((c) => (c < 18 ? 'cold' : c > 24 ? 'warm' : 'comfy'));
   return { celsius, fahrenheit, label };
 });
 

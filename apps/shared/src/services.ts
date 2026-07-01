@@ -12,7 +12,7 @@ import * as Context from 'effect/Context';
 import * as Duration from 'effect/Duration';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { atom, derive, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom, type Atom, type ReadableAtom } from '@tmonier/effract';
 
 // --- Config: app constants, and a dependency of Greeter -----------------------
 
@@ -55,7 +55,7 @@ export const GreeterLive: Layer.Layer<Greeter, never, Config> = Layer.effect(Gre
   }),
 );
 
-// --- Store: stateful, backed by reactive AtomRefs the signals bridge observes --
+// --- Store: stateful, holding reactive atoms + a derived value the bridge reads --
 
 export interface Todo {
   readonly id: number;
@@ -86,7 +86,7 @@ export const StoreLive: Layer.Layer<Store> = Layer.sync(Store)(() => {
     { id: 3, text: 'Run the same component on the server', done: false },
   ]);
   const draft = atom('');
-  const remaining = derive(($) => $(todos).filter((todo) => !todo.done).length);
+  const remaining = todos.derive((list) => list.filter((todo) => !todo.done).length);
   let nextId = 4;
   const addTodo = (text: string): void => {
     const id = nextId;

@@ -18,9 +18,10 @@ effract never asks you to rewrite it.
 
 ```tsx
 const Dashboard = rec(function* () {
-  const stats = yield* Stats;
-  const [tab, setTab] = yield* hook(useState('overview'));
-  return <Panel tab={tab} total={stats.total} onTab={setTab} />; // Panel is plain React
+  const stats = yield* Stats; // an Effect service
+  const online = yield* stats.online; // reactive service state — read + subscribe
+  const box = yield* hook(useRef<HTMLDivElement>(null)); // a genuine React hook — a DOM ref
+  return <Panel ref={box} online={online} />; // Panel is plain React
 });
 ```
 

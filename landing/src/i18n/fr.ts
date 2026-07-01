@@ -17,7 +17,7 @@ const fr: SiteContent = {
     titleLead: 'Vos composants React, écrits comme des',
     titleGradient: 'programmes Effect.',
     subtitle:
-      'Le même composant, le même mount, en SPA, en SSR ou comme React Server Component — serveur ou client n’est qu’un [[détail de runtime]].',
+      'Votre état et votre logique vivent dans des services Effect — React n’est que la [[couche de rendu]]. Un composant, un seul mount, en SPA, en SSR ou comme React Server Component.',
     ctaPrimary: 'Lire la doc',
     ctaSecondary: 'Star sur GitHub',
     installNote: 'MIT · React 19+ · Effect v4 · ~1.7 ko',
@@ -30,15 +30,15 @@ const fr: SiteContent = {
     captionEnd: 'parlent les deux.',
   },
   callsite: {
-    caption: 'Un service et un vrai hook React dans un seul corps — [[vérifié à la compilation]].',
+    caption: 'Un service, son état lu de façon réactive — [[vérifié à la compilation]].',
   },
   thesis: {
     label: 'La thèse',
     title: 'Deux fibres, un composant',
     body: 'React et Effect ordonnancent tous deux sur des fibres. effract pilote le générateur d’un composant dans la passe de rendu de React — un seul flux de yield* pour les deux. [[Du React 100 % réel, sans réconciliateur remplacé]].',
     rows: [
-      { write: 'yield* Stats', does: 'un service, résolu de façon synchrone' },
-      { write: 'yield* hook(useState(0))', does: 'un vrai hook React, ordre stable' },
+      { write: 'yield* Cart', does: 'un service, résolu de façon synchrone' },
+      { write: 'yield* cart.total', does: 'état réactif — lecture + abonnement' },
       { write: 'yield* query(data, id)', does: 'suspend ; chargement suivi par le type' },
       { write: 'un échec typé', does: 'affiche une vue de repli via .catch' },
     ],
@@ -68,25 +68,25 @@ const fr: SiteContent = {
     caption: 'L’obligation remonte jusqu’à la racine — une seule boundary couvre le sous-arbre.',
   },
   philosophy: {
-    label: 'Philosophie',
-    title: 'Gardez la couche de rendu ennuyeuse',
-    body: 'Un composant React doit être [[presque banal]] — structure et interaction, rien de plus. Le difficile vit [[hors de React]], résolu au point de composition et remis à votre JSX en résultat typé.',
+    label: 'L’idée',
+    title: 'La logique dans Effect, React pour le rendu',
+    body: 'Un composant React doit être [[presque banal]] — structure et interaction, rien de plus. L’état, et la logique qui va avec, vivent [[hors de React]], dans des services Effect ; le composant lit un résultat typé avec yield* et l’affiche. Pas de useState, pas de logique dans l’arbre.',
     points: [
       {
-        title: 'Le difficile vit dans Effect',
-        desc: 'Retries, concurrence, cache, tracing — le travail d’Effect, hors de l’arbre de rendu, testable et réutilisable.',
+        title: 'L’état et la logique dans les services',
+        desc: 'Atomes, dérivation (derive), retries, concurrence, cache — le travail d’Effect, dans des services hors de l’arbre de rendu. Testable sans React ; réutilisable partout.',
       },
       {
-        title: 'La composition async devient triviale',
-        desc: 'Plus d’états de chargement ni de hooks en cascade. Tout est résolu avant le rendu ; le corps se lit de haut en bas.',
+        title: 'Le composant ne fait qu’afficher',
+        desc: 'Il lit l’état avec yield* et déclenche des événements. Rien à mémoïser, aucun hook en cascade — le corps se lit de haut en bas, trop mince pour mériter un test.',
       },
       {
-        title: 'La bonne idée des RSC, sans le serveur',
-        desc: 'Le vrai intérêt des RSC : résoudre les dépendances à la racine de composition. effract le garde, sans le verrou.',
+        title: 'Universel par construction',
+        desc: 'Un service tourne en SPA, en SSR, dans une fibre de fond, ou sur le serveur pour un RSC — son état est accessible partout où tourne un Effect.',
       },
       {
         title: 'Une primitive, pas un zoo',
-        desc: 'Remisez useEffect, une lib de fetch, le context, un store, les server actions — un seul yield* couvre les trois.',
+        desc: 'Remisez useState, useEffect, une lib de fetch, le context, un store, les server actions — un seul yield* les couvre.',
       },
     ],
   },
@@ -107,8 +107,8 @@ const fr: SiteContent = {
         desc: 'Lire un service est une [[lecture de Context]], pas un aller-retour async. Aucun Effect.runSync au call site.',
       },
       {
-        title: 'Des signaux sans cérémonie',
-        desc: 'observe($ => $(count) * 2) re-rend [[exactement quand]] un atom lu change. Sans provider, sans sélecteurs.',
+        title: 'L’état dans les services, pas useState',
+        desc: 'Les atomes vivent dans Effect ; un composant en lit un avec yield* et se re-rend [[exactement quand]] il change. derive, atomFamily, batch — sans provider, sans sélecteurs.',
       },
       {
         title: 'RSC, nativement',

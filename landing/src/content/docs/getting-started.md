@@ -38,43 +38,46 @@ A React Effect Component (REC) is a real React component. Define a service, read
 the runtime in once with `mount`:
 
 ```tsx
-import { mount, rec, hook } from '@tmonier/effract';
+import { mount, rec, atom, type Atom } from '@tmonier/effract';
 import { createRoot } from 'react-dom/client';
-import { useState } from 'react';
 import * as Context from 'effect/Context';
 import * as Layer from 'effect/Layer';
 
-class Stats extends Context.Service<Stats, { total: number }>()('app/Stats') {}
-const StatsLive = Layer.succeed(Stats)({ total: 1280 });
+// A stateful service — the state *and* the logic over it live here, in Effect.
+class Counter extends Context.Service<
+  Counter,
+  { readonly count: Atom<number>; readonly inc: () => void }
+>()('app/Counter') {}
+const CounterLive = Layer.sync(Counter)(() => {
+  const count = atom(0);
+  return { count, inc: () => count.update((n) => n + 1) };
+});
 
 // Card is a plain React component — an ordinary function, left untouched.
 const Card = ({ children }: { children: React.ReactNode }) => <section className="card">{children}</section>;
 
-// Counter is a REC: it reaches for a service, so it's written with `rec(...)`.
-const Counter = rec(function* () {
-  const stats = yield* Stats; // an Effect service
-  const [n, setN] = yield* hook(useState(0)); // a real React hook
-  return (
-    <button onClick={() => setN(n + 1)}>
-      {n} · {stats.total} total
-    </button>
-  );
+// CounterView is a REC: it reaches for a service, so it's written with `rec(...)`.
+const CounterView = rec(function* () {
+  const counter = yield* Counter;
+  const n = yield* counter.count; // reactive read — re-renders precisely when count changes
+  return <button onClick={() => counter.inc()}>{n}</button>; // no useState, no logic — just render
 });
 
-// App places the plain Card as JSX and the Counter REC by yielding it.
+// App places the plain Card as JSX and the CounterView REC by yielding it.
 const App = rec(function* () {
-  return <Card>{yield* Counter}</Card>;
+  return <Card>{yield* CounterView}</Card>;
 });
 
-createRoot(document.getElementById('root')!).render(mount(StatsLive, App));
+createRoot(document.getElementById('root')!).render(mount(CounterLive, App));
 ```
 
-A REC is **not** a JSX element — `<Counter />` is a compile error. You place a REC by `yield*`-ing it
-inside another component's returned JSX (`{yield* Counter}`, or `{yield* Counter.with({ ... })}` to
-pass props), while plain components like `<Card>` stay normal JSX. `mount(StatsLive, App)` builds the
-Effect runtime once and returns a `ReactNode`; it verifies _at compile time_ that the layer provides
-every service the tree needs — a missing service is a type error that names it. The `Stats` service is
-then resolved synchronously inside `Counter`.
+The state lives in the `Counter` service; the component only reads it (`yield* counter.count`) and fires
+an event (`counter.inc()`). A REC is **not** a JSX element — `<CounterView />` is a compile error. You
+place a REC by `yield*`-ing it inside another component's returned JSX (`{yield* CounterView}`, or
+`{yield* CounterView.with({ ... })}` to pass props), while plain components like `<Card>` stay normal
+JSX. `mount(CounterLive, App)` builds the Effect runtime once and returns a `ReactNode`; it verifies _at
+compile time_ that the layer provides every service the tree needs — a missing service is a type error
+that names it.
 
 ## Where to next
 

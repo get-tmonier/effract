@@ -8,17 +8,17 @@ interface Props {
 }
 const { thesis, callsite } = Astro.props.content;
 
-const code = `// Counter: a React component,
-// written as an Effect program
-const Counter = rec(function* () {
-  const stats = yield* Stats
-  const [n] = yield* hook(useState(0))
-  return <Row n={n} of={stats.total}/>
+const code = `// A component as an Effect program:
+// logic in a service, React for render
+const CartSummary = rec(function* () {
+  const cart = yield* Cart
+  const total = yield* cart.total // reactive
+  return <Row total={total} onAdd={cart.add}/>
 })
 
 // DI checked at compile time:
 createRoot(el).render(
-  mount(AppLive, Counter),
+  mount(AppLive, CartSummary),
 )`;
 ---
 
@@ -45,7 +45,7 @@ createRoot(el).render(
     </div>
 
     <div class="reveal" style="--reveal-delay: 120ms">
-      <CodeWindow code={code} title="counter.tsx" />
+      <CodeWindow code={code} title="cart.tsx" />
       <p
         class="mt-4 text-center text-sm text-muted text-pretty"
         set:html={emphasize(callsite.caption)}

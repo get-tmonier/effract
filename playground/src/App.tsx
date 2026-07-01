@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import * as Context from 'effect/Context';
 import * as Layer from 'effect/Layer';
-import { atom, batch, derive, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom, batch, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
 
 /**
  * effract — logic in Effect, React for render.
@@ -39,8 +39,8 @@ export class Cart extends Context.Service<
 
 export const AppLive = Layer.sync(Cart)(() => {
   const items = atom<ReadonlyArray<Item>>([]);
-  const count = derive(($) => $(items).length);
-  const total = derive(($) => $(items).reduce((sum, item) => sum + item.price, 0));
+  const count = items.derive((list) => list.length);
+  const total = items.derive((list) => list.reduce((sum, item) => sum + item.price, 0));
   return {
     items,
     count,

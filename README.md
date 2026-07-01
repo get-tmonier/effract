@@ -107,7 +107,8 @@ drives _synchronously, during render_, answering each `yield*` by what it is:
 | You write | effract does |
 | --- | --- |
 | `yield* SomeService` | resolves it synchronously from the runtime's `Context` |
-| `yield* hook(useState(0))` | a genuine React hook — keeps its place in React's hook order |
+| `yield* someAtom` | reads reactive service state — its value, and subscribes this component |
+| `yield* hook(useRef(el))` | a genuine React hook — keeps its place in React's hook order |
 | `yield* someAsyncEffect` | suspends through React Suspense / `use`, resumes inline |
 | a typed failure | renders a [`.catch`](#typed-errors) fallback for its `_tag` — else throws to the nearest error boundary |
 
@@ -168,23 +169,34 @@ One package. Its only peers are **React 19+** and **Effect v4** — nothing else
 Flight runtime (see [Bundle size](#bundle-size)).
 
 ```tsx
-import { mount, rec, hook } from '@tmonier/effract';
+import { mount, rec, atom, type Atom } from '@tmonier/effract';
 import { createRoot } from 'react-dom/client';
-import { useState } from 'react';
+import * as Context from 'effect/Context';
+import * as Layer from 'effect/Layer';
 
 const Card = ({ children }: { children: React.ReactNode }) => <section>{children}</section>; // plain React
 
-const Counter = rec(function* () {
-  const stats = yield* Stats; // a service → it's a REC
-  const [n, setN] = yield* hook(useState(0));
-  return <button onClick={() => setN(n + 1)}>{n} · {stats.total}</button>;
+// State and the logic over it live in a service, in Effect.
+class Counter extends Context.Service<Counter, {
+  readonly count: Atom<number>;
+  readonly inc: () => void;
+}>()('Counter') {}
+const CounterLive = Layer.sync(Counter)(() => {
+  const count = atom(0);
+  return { count, inc: () => count.update((n) => n + 1) };
+});
+
+const CounterView = rec(function* () {
+  const counter = yield* Counter; // a service → it's a REC
+  const n = yield* counter.count; // reactive read — no useState, no logic
+  return <button onClick={() => counter.inc()}>{n}</button>;
 });
 
 const App = rec(function* () {
-  return <Card>{yield* Counter}</Card>; // plain JSX + a yielded REC
+  return <Card>{yield* CounterView}</Card>; // plain JSX + a yielded REC
 });
 
-createRoot(document.getElementById('root')!).render(mount(AppLive, App));
+createRoot(document.getElementById('root')!).render(mount(CounterLive, App));
 ```
 
 Full guide and docs → **[effract.tmonier.com](https://effract.tmonier.com)**.
@@ -230,7 +242,7 @@ class Cart extends Context.Service<Cart, {
 
 const CartLive = Layer.sync(Cart)(() => {
   const items = atom<ReadonlyArray<Item>>([]);
-  const total = derive(($) => $(items).reduce((n, i) => n + i.price, 0));
+  const total = items.derive((xs) => xs.reduce((n, i) => n + i.price, 0)); // no $ — one source
   return { items, total, add: (item) => items.update((xs) => [...xs, item]) };
 });
 
@@ -247,18 +259,20 @@ const CartSummary = rec(function* () {
 | --- | --- |
 | `atom(initial)` | a writable reactive cell (`.value` / `.set` / `.update`) |
 | `yield* atom` | read it in a REC — reads the value and subscribes this component |
-| `derive(($) => …)` | a **computed** atom; tracks exactly what it reads, recomputes on change, composes |
+| `atom.derive(v => …)` | **computed** from one atom — the value handed over directly, no `$`; chains |
+| `derive(($) => …)` | **computed** from *several* atoms — `$` tracks each; recomputes on change |
 | `derive.writable(read, write)` | a **two-way** computed atom — `set` flows back to the sources |
 | `derive.effect(($) => effect)` | an **async** computed atom — suspends while it runs, refetches on change, carries the `S` loading obligation |
 | `atomFamily(make)` | one memoised atom **per key** — per-entity state as a lookup |
 | `batch(writes)` | coalesce a burst of writes into **one** notification wave |
 
-And the React-side reads, for when a value is local to a component rather than owned by a service:
+And the reads, for a value local to a component rather than owned by a service — no `$`:
 
 ```tsx
-const doubled = observe(($) => $(likes) * 2); // hook: re-renders only when an atom it read changes
-const [n, setN] = useAtom(likes);             // the useState shape, backed by Effect
-<Observe>{($) => <b>{$(likes)}</b>}</Observe>; // the same, inline in JSX
+const n = useAtomValue(likes);          // read one atom (re-renders on change); yield* in a REC
+const twice = useAtomValue(doubled);    // read a derived atom — derive it outside the component
+const [v, setV] = useAtom(likes);       // read + write, the useState shape, backed by Effect
+<Observe>{($) => <b>{$(likes)}</b>}</Observe>; // the inline-JSX form, when you don't hoist a derive
 ```
 
 See recipes [05](./examples/src/05-stateful-service.tsx) (state + derived state in a service),

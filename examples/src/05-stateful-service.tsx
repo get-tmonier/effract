@@ -12,7 +12,7 @@
 import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
 import * as Layer from 'effect/Layer';
-import { atom, derive, mount, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
+import { atom, mount, rec, type Atom, type ReadableAtom } from '@tmonier/effract';
 
 class Cart extends Context.Service<
   Cart,
@@ -25,7 +25,7 @@ class Cart extends Context.Service<
 
 const CartLive = Layer.sync(Cart)(() => {
   const items = atom<ReadonlyArray<string>>([]);
-  const count = derive(($) => $(items).length); // derivation stays here, not in a component
+  const count = items.derive((list) => list.length); // derivation stays here, not in a component
   return {
     items,
     count,
