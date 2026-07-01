@@ -36,12 +36,12 @@ import { driveRecCaught } from '#application/interpreter.ts';
 import type { Placer, RenderCache, Suspender } from '#application/ports.ts';
 import type { RecHandle, RecPlacement } from '#domain/protocol.ts';
 import {
-  makeQueryResolver,
+  makeSuspensableResolver,
   nextInstanceId,
   reconcileClaims,
   releaseClaims,
   scopeOf,
-} from '#infrastructure/react/query-store.ts';
+} from '#infrastructure/react/suspensable-store.ts';
 import type {
   Effective,
   LoadingNotHandled,
@@ -122,10 +122,10 @@ const clientFcFor = (handle: RecHandle<ReactNode>): FunctionComponent<object> =>
     useQueryClaims(instanceId, usedRef);
 
     const used = new Set<string>();
-    const resolver = makeQueryResolver(scope, executor, suspender, used);
+    const resolver = makeSuspensableResolver(scope, executor, suspender, used);
     const node = driveRecCaught(
       handle.body(props),
-      { executor, suspender, cache, queryResolver: resolver, placer: clientPlacer },
+      { executor, suspender, cache, suspensableResolver: resolver, placer: clientPlacer },
       handle.catchHandlers,
     );
     // Reached only when the body did not suspend, i.e. this render will commit —

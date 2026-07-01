@@ -15,7 +15,7 @@ import type {
   Executor,
   InterpreterDeps,
   Placer,
-  QueryResolver,
+  SuspensableResolver,
   RenderCache,
   Suspender,
 } from '#application/ports.ts';
@@ -45,7 +45,7 @@ const neverPlace: Placer = {
   },
 };
 
-const neverResolveQuery: QueryResolver = {
+const neverResolveSuspensable: SuspensableResolver = {
   resolve: () => {
     throw new Error('did not expect a query');
   },
@@ -58,7 +58,7 @@ const makeDeps = (
   executor: executorWith(layer),
   suspender,
   cache: new Map(),
-  queryResolver: neverResolveQuery,
+  suspensableResolver: neverResolveSuspensable,
   placer: neverPlace,
 });
 
@@ -128,7 +128,7 @@ describe('driveRec', () => {
     const retryDeps: InterpreterDeps = {
       executor: deps.executor,
       cache: deps.cache,
-      queryResolver: neverResolveQuery,
+      suspensableResolver: neverResolveSuspensable,
       suspender: { use: () => 99 as never },
       placer: neverPlace,
     };
@@ -161,7 +161,7 @@ describe('driveRec', () => {
         executor: executorWith(Layer.empty),
         suspender: neverSuspend,
         cache,
-        queryResolver: neverResolveQuery,
+        suspensableResolver: neverResolveSuspensable,
         placer: neverPlace,
       }),
     ).toThrow(TypeError);

@@ -21,14 +21,15 @@ export {
   isPlacement,
   placement,
   PlacementTypeId,
+  suspend,
   query,
-  isQuery,
-  QueryTypeId,
+  isSuspensable,
+  SuspensableTypeId,
 } from '#domain/protocol.ts';
 export type {
   AnyEffect,
   Hook,
-  Query,
+  Suspensable,
   Suspends,
   Yieldable,
   RecBody,

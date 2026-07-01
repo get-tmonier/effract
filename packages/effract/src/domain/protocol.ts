@@ -78,52 +78,41 @@ export const hook = <A>(value: A): Hook<A> => {
 export const isHook = (u: unknown): u is Hook<unknown> =>
   typeof u === 'object' && u !== null && HookTypeId in u;
 
-/** Brand identifying an async-data query instruction. */
-export const QueryTypeId = Symbol.for('@tmonier/effract/Query');
-export type QueryTypeId = typeof QueryTypeId;
+/** Brand identifying a suspensable instruction (a `suspend`/`query`). */
+export const SuspensableTypeId = Symbol.for('@tmonier/effract/Suspensable');
+export type SuspensableTypeId = typeof SuspensableTypeId;
 
 /**
- * The fourth kind of yieldable: an *async data query*. Unlike a raw `yield*
- * effect` — which the interpreter may still suspend on, but silently — a query
- * is a component's declared asynchronous dependency. Yielding one both suspends
- * for the value *and* contributes a {@link Suspends} obligation to the REC's
- * type, so the loading state must be handled somewhere (`.suspense(...)`, or the
- * `mount` boundary) before the tree compiles. Its `effect` also carries the `E`
- * and `R` channels, which bubble exactly as a yielded effect's do — so retries,
- * timeouts and cancellation are just Effect combinators on `effect`, and its
- * failures are catchable with `.catch`. `key` (compared by value) drives refetch.
+ * The fourth kind of yieldable: a *suspensable* — a component's declared
+ * asynchronous dependency. Unlike a raw `yield* effect` (which the interpreter
+ * may still suspend on, but silently), yielding a suspensable both suspends for
+ * the value *and* contributes a {@link Suspends} obligation to the REC's type,
+ * so the loading state must be handled somewhere (`.suspense(...)`, or the
+ * `mount` boundary) before the tree compiles. Its `effect` carries the `E` and
+ * `R` channels, which bubble as a yielded effect's do — so retries, timeouts and
+ * cancellation are just Effect combinators on `effect`, and its failures are
+ * catchable with `.catch`. `key` (compared by value) drives refetch; `undefined`
+ * means load-once. Both {@link suspend} and {@link query} produce this.
  */
-export interface Query<out A, out E, out R> {
-  readonly [QueryTypeId]: true;
+export interface Suspensable<out A, out E, out R> {
+  readonly [SuspensableTypeId]: true;
   readonly effect: Effect.Effect<A, E, R>;
   readonly key: unknown;
-  [Symbol.iterator](): Iterator<Query<A, E, R>, A>;
+  [Symbol.iterator](): Iterator<Suspensable<A, E, R>, A>;
 }
 
-/**
- * Declare an asynchronous data dependency. The interpreter runs `effect`,
- * suspends the render until it settles (through React's `use`), and re-runs it
- * when `key` changes by value. On the client the in-flight fiber is interrupted
- * when the component unmounts; on the server the effect is simply awaited.
- *
- * ```ts
- * const user = yield* query(fetchUser(id), id);                 // refetch on id
- * const feed = yield* query(load.pipe(Effect.timeout('2s')));   // policies via Effect
- * ```
- *
- * The effect runs once per (component, position, key), deduped across every
- * render attempt — including the pre-commit retries React makes when a component
- * suspends before it first commits — so a query does not double-fetch on mount.
- */
-export const query = <A, E, R>(effect: Effect.Effect<A, E, R>, key?: unknown): Query<A, E, R> => {
-  const self: Query<A, E, R> = {
-    [QueryTypeId]: true,
+const makeSuspensable = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  key: unknown,
+): Suspensable<A, E, R> => {
+  const self: Suspensable<A, E, R> = {
+    [SuspensableTypeId]: true,
     effect,
     key,
     [Symbol.iterator]() {
       let yielded = false;
       return {
-        next(sent?: unknown): IteratorResult<Query<A, E, R>, A> {
+        next(sent?: unknown): IteratorResult<Suspensable<A, E, R>, A> {
           if (yielded) {
             return { done: true, value: sent as A };
           }
@@ -136,18 +125,55 @@ export const query = <A, E, R>(effect: Effect.Effect<A, E, R>, key?: unknown): Q
   return self;
 };
 
-/** Type guard: is this yielded instruction an async-data query? */
-export const isQuery = (u: unknown): u is Query<unknown, unknown, unknown> =>
-  typeof u === 'object' && u !== null && QueryTypeId in u;
+/**
+ * The suspensable primitive: run `effect`, suspend the render until it settles
+ * (through React's `use`), and return its value — declaring a loading obligation
+ * the type system makes you handle. Load-once: it runs a single time per
+ * component instance and position, deduped across every render attempt (including
+ * the pre-commit retries React makes when a component suspends before it first
+ * commits), and its in-flight fiber is interrupted when the component unmounts.
+ *
+ * It is the building block {@link query} is made of — reach for `suspend` to
+ * opt an effect into Suspense without query's keyed-refetch semantics, or to
+ * build your own async abstractions on top.
+ *
+ * ```ts
+ * const config = yield* suspend(loadConfig());        // load-once
+ * const feed = yield* suspend(load.pipe(Effect.timeout('2s'))); // policies via Effect
+ * ```
+ */
+export const suspend = <A, E, R>(effect: Effect.Effect<A, E, R>): Suspensable<A, E, R> =>
+  makeSuspensable(effect, undefined);
+
+/**
+ * A keyed suspensable — {@link suspend} plus refetch. It re-runs `effect` when
+ * `key` changes by value (leaving `key` off makes it load-once, exactly like
+ * `suspend`). Same guarantees otherwise: deduped across render attempts,
+ * interrupted on unmount, failures catchable with `.catch`.
+ *
+ * ```ts
+ * const user = yield* query(fetchUser(id), id); // refetch when id changes
+ * ```
+ */
+export const query = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  key?: unknown,
+): Suspensable<A, E, R> => makeSuspensable(effect, key);
+
+/** Type guard: is this yielded instruction a suspensable (`suspend`/`query`)? */
+export const isSuspensable = (u: unknown): u is Suspensable<unknown, unknown, unknown> =>
+  typeof u === 'object' && u !== null && SuspensableTypeId in u;
 
 /**
  * The phantom marker of an *unhandled loading obligation*. A body that yields a
- * {@link Query} (or places a child that still carries one) has this in its `S`
- * channel; `.suspense(fallback)` — or the `mount` boundary — discharges it back
- * to `never`. It never exists at runtime; it exists only so the type system can
- * insist a loading state is handled somewhere between component and root. The
+ * {@link Suspensable} (or places a child that still carries one) has this in its
+ * `S` channel; `.suspense(fallback)` — or the `mount` boundary — discharges it
+ * back to `never`. It never exists at runtime; it exists only so the type system
+ * can insist a loading state is handled somewhere between component and root. The
  * branded field is nominal — it makes `Suspends` distinct from `never` and from
- * any ordinary type, so the discharge checks are exact.
+ * any ordinary type, so the discharge checks are exact. Loading is a single
+ * catch-all obligation (not a union like the tagged error channel): a pending
+ * effect has no tag, so one `.suspense` discharges the whole subtree beneath it.
  */
 export interface Suspends {
   readonly ['@tmonier/effract/loading']: true;
@@ -158,14 +184,14 @@ export type Yieldable<A> =
   | Effect.Effect<A, unknown, unknown>
   | Hook<A>
   | RecPlacement<A, unknown, unknown>
-  | Query<A, unknown, unknown>;
+  | Suspensable<A, unknown, unknown>;
 
 /** The generator a React Effect Component body produces. */
 export type RecGenerator<A> = Generator<
   | AnyEffect
   | Hook<unknown>
   | RecPlacement<unknown, unknown, unknown>
-  | Query<unknown, unknown, unknown>,
+  | Suspensable<unknown, unknown, unknown>,
   A,
   unknown
 >;
@@ -200,7 +226,7 @@ export interface RecHandle<A> {
   readonly catchHandlers?: CatchDispatch<A>;
   /**
    * The loading fallback for this REC, if it was `.suspense`-wrapped: the client
-   * places it in a real `<Suspense>` boundary so a yielded {@link Query}'s
+   * places it in a real `<Suspense>` boundary so a yielded {@link Suspensable}'s
    * pending state renders this node. Renderer-agnostic in `A`; absent otherwise.
    */
   readonly suspenseFallback?: A;
@@ -290,39 +316,40 @@ type PlacementsAsEffects<Eff> =
   Eff extends RecPlacement<unknown, infer R, unknown> ? Effect.Effect<unknown, unknown, R> : never;
 
 /**
- * Re-express each yielded query as an effect carrying its `E` and `R`, so a
- * query's errors and requirements join the body's exactly as a raw effect's do.
+ * Re-express each yielded suspensable as an effect carrying its `E` and `R`, so
+ * a suspensable's errors and requirements join the body's exactly as a raw
+ * effect's do.
  */
-type QueriesAsEffects<Eff> =
-  Eff extends Query<unknown, infer E, infer R> ? Effect.Effect<unknown, E, R> : never;
+type SuspensablesAsEffects<Eff> =
+  Eff extends Suspensable<unknown, infer E, infer R> ? Effect.Effect<unknown, E, R> : never;
 
 /**
  * Recover the Effect requirement channel `R` from everything a body yields —
- * services, effects, placed child RECs, and queries. A body that needs both `A`
- * and `B` requires `A & B`, which is exactly the intersection TypeScript infers
- * from the contravariant requirement slot.
+ * services, effects, placed child RECs, and suspensables. A body that needs both
+ * `A` and `B` requires `A & B`, which is exactly the intersection TypeScript
+ * infers from the contravariant requirement slot.
  */
 export type RequirementsOf<Eff> = [
-  EffectsOnly<Eff> | PlacementsAsEffects<Eff> | QueriesAsEffects<Eff>,
+  EffectsOnly<Eff> | PlacementsAsEffects<Eff> | SuspensablesAsEffects<Eff>,
 ] extends [Effect.Effect<unknown, unknown, infer R>]
   ? R
   : never;
 
-/** Recover the Effect error channel `E` (a union — any yielded effect or query may fail). */
-export type ErrorsOf<Eff> = [EffectsOnly<Eff> | QueriesAsEffects<Eff>] extends [
+/** Recover the Effect error channel `E` (a union — any yielded effect or suspensable may fail). */
+export type ErrorsOf<Eff> = [EffectsOnly<Eff> | SuspensablesAsEffects<Eff>] extends [
   Effect.Effect<unknown, infer E, unknown>,
 ]
   ? E
   : never;
 
 /**
- * Recover the loading obligation `S`. A yielded {@link Query} contributes
+ * Recover the loading obligation `S`. A yielded {@link Suspensable} contributes
  * {@link Suspends}; a placed child contributes whatever `S` it still carries.
  * The union is `Suspends` if *anything* below is unhandled, and `never` once it
  * all is — the exact condition `mount` (and `.suspense`) check.
  */
 export type SuspendsOf<Eff> =
-  Eff extends Query<unknown, unknown, unknown>
+  Eff extends Suspensable<unknown, unknown, unknown>
     ? Suspends
     : Eff extends RecPlacement<unknown, unknown, infer S>
       ? S

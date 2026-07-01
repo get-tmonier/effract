@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as Data from 'effect/Data';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { hook, mount, query, rec } from '../../index.client.ts';
+import { hook, mount, query, rec, suspend } from '../../index.client.ts';
 
 Reflect.set(globalThis, 'IS_REACT_ACT_ENVIRONMENT', true);
 
@@ -160,6 +160,29 @@ describe('query — async data + loading obligation', () => {
     expect(interrupted).toBe(true);
   });
 
+  it('suspend — the primitive — suspends for a value and carries the obligation', async () => {
+    let resolve: (u: User) => void = () => {};
+    const gate = new Promise<User>((r) => {
+      resolve = r;
+    });
+    // `suspend` (no key) is the load-once primitive `query` is built on.
+    const Profile = rec(function* () {
+      const user = yield* suspend(Effect.promise(() => gate));
+      return <span>hi {user.name}</span>;
+    }).suspense(<i>loading</i>);
+
+    const root = createRoot(container);
+    await act(async () => root.render(mount(Layer.empty, Profile)));
+    expect(container.textContent).toContain('loading');
+    await act(async () => {
+      resolve({ name: 'Ada' });
+      await gate;
+    });
+    await flush();
+    expect(container.textContent).toContain('hi Ada');
+    await act(async () => root.unmount());
+  });
+
   it('runs once and survives under StrictMode (no double-fetch on remount)', async () => {
     let runs = 0;
     let resolve: (u: User) => void = () => {};
@@ -236,7 +259,16 @@ describe('query — async data + loading obligation', () => {
   void mount(Layer.empty, Parent);
   void mount(Layer.empty, Parent.suspense(<i>loading</i>));
 
-  // A REC with a plain (non-query) effect has no obligation — mounts with neither:
+  // `suspend` (the primitive) carries the obligation too — not just `query`:
+  const Susp = rec(function* () {
+    const v = yield* suspend(Effect.succeed(1));
+    return <i>{v}</i>;
+  });
+  // @ts-expect-error effract: loading not handled
+  void mount(Layer.empty, Susp);
+  void mount(Layer.empty, Susp.suspense(<i>loading</i>));
+
+  // A REC with a plain (non-suspensable) effect has no obligation — mounts with neither:
   const Plain = rec(function* () {
     const n = yield* Effect.succeed(1);
     return <i>{n}</i>;

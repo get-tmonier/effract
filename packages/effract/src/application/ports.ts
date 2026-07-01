@@ -5,7 +5,7 @@
  * plain fakes.
  */
 import type * as Exit from 'effect/Exit';
-import type { AnyEffect, Query, RecPlacement } from '#domain/protocol.ts';
+import type { AnyEffect, RecPlacement, Suspensable } from '#domain/protocol.ts';
 
 /**
  * Something that can run an Effect. Backed in production by a `ManagedRuntime`
@@ -46,16 +46,17 @@ interface AsyncSlot {
 export type RenderCache = Map<number, AsyncSlot>;
 
 /**
- * Resolves a yielded {@link Query} to its value, suspending until it settles.
- * Injected because a query's cache must outlive the component's render attempts:
- * React re-renders a component that suspends *before it first commits* with fresh
- * refs, so a per-render cache can't dedupe that. The React adapter backs this
- * with a store keyed by (component, encounter order, key) that lives outside the
- * render lifecycle — claimed on commit, released (and the fiber interrupted) on
- * unmount. `index` is the query's encounter order within the body.
+ * Resolves a yielded {@link Suspensable} (a `suspend`/`query`) to its value,
+ * suspending until it settles. Injected because the cache must outlive the
+ * component's render attempts: React re-renders a component that suspends
+ * *before it first commits* with fresh refs, so a per-render cache can't dedupe
+ * that. The React adapter backs this with a store keyed by (component, encounter
+ * order, key) that lives outside the render lifecycle — claimed on commit,
+ * released (and the fiber interrupted) on unmount. `index` is the encounter
+ * order within the body.
  */
-export interface QueryResolver {
-  resolve(query: Query<unknown, unknown, unknown>, index: number): unknown;
+export interface SuspensableResolver {
+  resolve(suspensable: Suspensable<unknown, unknown, unknown>, index: number): unknown;
 }
 
 /**
@@ -75,6 +76,6 @@ export interface InterpreterDeps {
   readonly executor: Executor;
   readonly suspender: Suspender;
   readonly cache: RenderCache;
-  readonly queryResolver: QueryResolver;
+  readonly suspensableResolver: SuspensableResolver;
   readonly placer: Placer;
 }

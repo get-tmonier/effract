@@ -20,7 +20,7 @@ import * as Exit from 'effect/Exit';
 import {
   isHook,
   isPlacement,
-  isQuery,
+  isSuspensable,
   type AnyEffect,
   type CatchDispatch,
   type RecGenerator,
@@ -88,10 +88,11 @@ export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
     } else if (isPlacement(instruction)) {
       // A child REC: hand it to the renderer to place as a real React child.
       result = deps.placer.place(instruction);
-    } else if (isQuery(instruction)) {
-      // Async data: the resolver suspends for it, refetches on key, and (backed
-      // by a cross-render store) interrupts on unmount. Keyed by encounter order.
-      result = deps.queryResolver.resolve(instruction, state.queryIndex++);
+    } else if (isSuspensable(instruction)) {
+      // Async data (suspend/query): the resolver suspends for it, refetches on
+      // key, and (backed by a cross-render store) interrupts on unmount. Keyed by
+      // encounter order.
+      result = deps.suspensableResolver.resolve(instruction, state.queryIndex++);
     } else {
       result = resolveEffect(instruction, deps, state);
     }

@@ -23,11 +23,11 @@ import {
   type CatchDispatch,
   type ErrorsOf,
   type Hook,
-  type Query,
   type RecBody,
   type RecHandle,
   type RecPlacement,
   type RequirementsOf,
+  type Suspensable,
   type SuspendsOf,
 } from '#domain/protocol.ts';
 
@@ -56,7 +56,7 @@ type AnyYield =
   | AnyEffect
   | Hook<unknown>
   | RecPlacement<ReactNode, unknown, unknown>
-  | Query<unknown, unknown, unknown>;
+  | Suspensable<unknown, unknown, unknown>;
 
 interface RecCore<P, E, R, S> extends RecHandle<ReactNode> {
   readonly [RecTypeId]: true;
@@ -85,9 +85,9 @@ interface RecCore<P, E, R, S> extends RecHandle<ReactNode> {
    */
   catch(handlers: CatchHandlers<E>): REC<P, UntaggedErrors<E>, R, S>;
   /**
-   * Handle this REC's loading state. A REC that `yield*`s a `query` carries a
-   * loading obligation `S`; `.suspense(fallback)` discharges it by placing the
-   * REC in a real `<Suspense>` boundary, so while a query is pending the
+   * Handle this REC's loading state. A REC that `yield*`s a `suspend`/`query`
+   * carries a loading obligation `S`; `.suspense(fallback)` discharges it by
+   * placing the REC in a real `<Suspense>` boundary, so while it is pending the
    * `fallback` renders in its place.
    *
    * ```tsx
@@ -161,7 +161,7 @@ const makeRec = <P extends object, E, R, S>(
 /**
  * Define a React Effect Component. The body is a generator that may `yield*`
  * Effect services and effects, `yield* hook(...)` for React hooks, `yield*
- * query(...)` for async data, and `yield* Child` / `yield* Child.with(props)` to
+ * suspend(...)` / `query(...)` for async data, and `yield* Child` / `yield* Child.with(props)` to
  * place other RECs.
  *
  * The returned descriptor is server-safe: the same `mount(...)` renders a
