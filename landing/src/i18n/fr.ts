@@ -20,7 +20,7 @@ const fr: SiteContent = {
       'Le même composant, le même mount, en SPA, en SSR ou comme React Server Component — serveur ou client n’est qu’un [[détail de runtime]].',
     ctaPrimary: 'Lire la doc',
     ctaSecondary: 'Star sur GitHub',
-    installNote: 'MIT · React 19+ · Effect v4 · ~5 Ko',
+    installNote: 'MIT · React 19+ · Effect v4 · ~1.7 ko',
   },
   weave: {
     react: 'Fibres React',
@@ -104,7 +104,7 @@ const fr: SiteContent = {
       },
       {
         title: 'Léger, et jamais en double',
-        desc: 'Le cœur fait ~5 Ko gzip. React et Effect restent des peers (la copie de votre app) — [[jamais embarqués ni livrés deux fois]], même entre versions mineures.',
+        desc: 'Le cœur client fait ~1.7 ko min+gzip. React et Effect restent des peers (la copie de votre app) — [[jamais embarqués ni livrés deux fois]], même entre versions mineures.',
       },
       {
         title: 'Typé de bout en bout',

@@ -20,7 +20,7 @@ const en: SiteContent = {
       'The same component, the same mount, runs in a SPA, during SSR, or as a React Server Component — server vs client is just a [[runtime detail]].',
     ctaPrimary: 'Read the docs',
     ctaSecondary: 'Star on GitHub',
-    installNote: 'MIT · React 19+ · Effect v4 · ~5 KB',
+    installNote: 'MIT · React 19+ · Effect v4 · ~1.7 kB',
   },
   weave: {
     react: 'React fibers',
@@ -104,7 +104,7 @@ const en: SiteContent = {
       },
       {
         title: 'Tiny, and never doubled',
-        desc: 'The core is ~5 KB gzip. React and Effect stay peers (your app’s copy) — [[never bundled or shipped twice]], even across minor versions.',
+        desc: 'The client core is ~1.7 kB min+gzip. React and Effect stay peers (your app’s copy) — [[never bundled or shipped twice]], even across minor versions.',
       },
       {
         title: 'Typed end to end',

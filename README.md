@@ -143,7 +143,8 @@ effract is tiny, and it never doubles your dependencies.
 
 | Package | Your bundle gains (min+gzip) |
 | --- | --- |
-| `@tmonier/effract` (core, client + server) | **~5 KB** |
+| `@tmonier/effract` (client entry) | **~1.7 kB** |
+| `@tmonier/effract` (server entry) | **~0.75 kB** |
 | `@tmonier/effract-vite` | 0 (build-time plugin) |
 
 That's effract's own code only. **React and Effect are never bundled** — they're `peerDependencies`, imported
