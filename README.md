@@ -143,16 +143,21 @@ Full guide and docs → **[effract.tmonier.com](https://effract.tmonier.com)**.
 
 ## Bundle size
 
-effract is tiny, and it never doubles your dependencies.
+effract is small, and it never doubles your dependencies.
 
-| Package | Your bundle gains (min+gzip) |
+| Package | Whole public API (min+gzip) |
 | --- | --- |
-| `@tmonier/effract` (client entry) | **~1.7 kB** |
-| `@tmonier/effract` (server entry) | **~0.75 kB** |
+| `@tmonier/effract` (client entry) | **~8 kB** |
+| `@tmonier/effract` (server entry) | **~4 kB** |
 | `@tmonier/effract-vite` | 0 (build-time plugin) |
 
-That's effract's own code only. **React and Effect are never bundled** — they're `peerDependencies`, imported
-externally and resolved to **your app's single copy**. Three things keep it that way:
+Those figures are the **entire** surface — `rec` / `hook` / `mount`, signals, `query` / `suspend`,
+`.catch`. The packages set `"sideEffects": false`, so anything you don't import (signals, queries, typed
+errors) **tree-shakes away** — a core `rec` + `hook` + `mount` app ships a fraction of it. The
+[bundlephobia badge](https://bundlephobia.com/package/@tmonier/effract) above shows the live figure.
+
+And that's effract's own code only. **React and Effect are never bundled** — they're `peerDependencies`,
+imported externally and resolved to **your app's single copy**. Three things keep it that way:
 
 - **Empty `dependencies`.** The packages ship no runtime deps; React/Effect are `import`ed, never inlined.
 - **Wide peer ranges** (`react: ^19.0.0`, `effect: >=4.0.0-beta.88 <5.0.0`) so a slightly different version

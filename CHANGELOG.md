@@ -6,6 +6,46 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-01
+
+**Typed errors and typed loading, rendered.** Two new capabilities turn Effect's error channel and a
+component's async dependencies into UI the compiler checks — and both are handled the same way effract
+handles services: at the boundary, in the type. Fully additive; existing code is unaffected.
+
+### Added
+
+- **`.catch({ Tag: fallback })`** — render an exhaustive, compile-checked fallback for each error a REC's
+  body can fail with. One handler per error `_tag`, each receiving exactly that error; forget a tag and it
+  won't compile. Works identically for synchronous and asynchronous failures, on the client and the
+  server. Suspense signals, defects, and a child's own failures are never swallowed.
+- **`query(effect, key?)`** — async data as a typed dependency. Suspends the render for the value,
+  refetches when `key` changes, interrupts the in-flight fiber on unmount (finalizers run), and dedupes
+  across React's render attempts (including pre-commit retries — no double-fetch on mount). Retries,
+  timeouts and cancellation are ordinary Effect combinators on the effect; failures are catchable with
+  `.catch`.
+- **`suspend(effect)`** — the lower-level suspensable primitive `query` is built on. Opt an effect into
+  Suspense and the loading obligation (load-once) without keyed refetch, or build your own async
+  abstractions on top.
+- **`.suspense(fallback)`** and **`mount(layer, Root, { loading })`** — discharge a REC's loading
+  obligation with a real `<Suspense>` boundary (in the tree, or at the mount boundary).
+- **The loading obligation, `S`.** A REC that yields a `suspend`/`query` carries a loading obligation in
+  its type; it bubbles to the root and `mount` will not compile until it is discharged — so a loading
+  state can't be silently forgotten. Loading is a single catch-all obligation (a pending effect has no
+  tag), discharged by one `.suspense` per boundary.
+
+### Fixed
+
+- **Runtime lifecycle under StrictMode.** The `ManagedRuntime` was disposed in a passive-effect cleanup
+  keyed on the runtime, so React StrictMode / offscreen remount finalized it out from under a still-mounted
+  component (and never rebuilt it) — every later `yield*` then ran against a dead runtime. Disposal is now
+  deferred and cancelled on re-setup, so a real unmount disposes exactly once and a strict remount is a
+  no-op.
+
+### Changed
+
+- **The `REC` type gained error and loading channels:** `REC<P, R>` → `REC<P, E, R, S>`. These are
+  inferred from `rec(...)`; only an explicit `REC<…>` annotation needs the new parameters.
+
 ## [0.3.0] — 2026-07-01
 
 **The public API is now three primitives — `rec`, `hook`, `mount`** (plus optional signals). One
@@ -106,7 +146,8 @@ The first public scaffold of effract — React components written as Effect prog
 - **Recipes** — eight typechecked, copy-pasteable call sites under `examples/`.
 - **ADR 0001** — the fiber-reconciliation design and its tradeoffs.
 
-[Unreleased]: https://github.com/get-tmonier/effract/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/get-tmonier/effract/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/get-tmonier/effract/releases/tag/v0.4.0
 [0.3.0]: https://github.com/get-tmonier/effract/releases/tag/v0.3.0
 [0.2.1]: https://github.com/get-tmonier/effract/releases/tag/v0.2.1
 [0.2.0]: https://github.com/get-tmonier/effract/releases/tag/v0.2.0

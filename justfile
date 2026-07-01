@@ -88,11 +88,10 @@ release version:
     if [ -n "$(git status --porcelain)" ]; then
         echo "Error: working tree is dirty — commit or stash first" >&2; exit 1
     fi
-    for dir in packages/effract packages/effract-rsc packages/effract-vite; do
+    for dir in packages/effract packages/effract-vite; do
         (cd "$dir" && npm pkg set version="{{version}}")
     done
-    npm pkg set version="{{version}}"
-    git add package.json packages/*/package.json
+    git add packages/*/package.json
     # Only commit when the version actually changed (the first release may already match).
     git diff --cached --quiet || git commit -m "chore: release v{{version}}"
     git tag "v{{version}}"
