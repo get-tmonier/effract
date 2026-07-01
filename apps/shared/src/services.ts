@@ -111,11 +111,11 @@ export class Store extends Context.Service<Store>()('shared/Store', {
   static readonly layer = Layer.effect(Store, Store.make);
 }
 
-// --- AppLive: the composition. Greeter receives Config; everything is merged. --
+// --- AppLive: the composition. `provideMerge` feeds Config into Greeter and keeps
+// both, so the tree can read Config directly too. Then merge the rest. -----------
 
 export const AppLive: Layer.Layer<Stats | Greeter | Store | Config> = Layer.mergeAll(
   StatsLive,
   Store.layer,
-  ConfigLive,
-  Layer.provide(GreeterLive, ConfigLive),
+  Layer.provideMerge(GreeterLive, ConfigLive),
 );

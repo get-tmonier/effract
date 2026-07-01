@@ -61,12 +61,18 @@ const GreeterLive = Layer.effect(
   }),
 );
 
-// provide Config into Greeter, then merge everything for the app
-export const AppLive = Layer.mergeAll(ConfigLive, Layer.provide(GreeterLive, ConfigLive));
+// Feed Config into Greeter and keep both available — one combinator, no repeat.
+// (`Layer.provide` alone would keep Config private to Greeter.)
+export const AppLive = Layer.provideMerge(GreeterLive, ConfigLive);
 ```
 
 The component just reads the finished result — all the wiring is ordinary Effect, and the same layer
 drives the client and the server.
+
+> **The bundled form.** A service that constructs state or depends on others is usually declared with
+> `Context.Service<Self>()(id, { make })` — the shape is inferred from `make`, and its Live layer is a
+> `static layer = Layer.effect(Self, Self.make)`. It's the same layers underneath; see
+> [Reactivity](/docs/signals/) for a stateful example.
 
 ## Escape hatch
 
