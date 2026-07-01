@@ -4,7 +4,7 @@ const en: SiteContent = {
   meta: {
     title: 'effract — write React components as Effect programs',
     description:
-      'Write React components as Effect programs. One component, one mount, running in a SPA, during SSR, or as a React Server Component — server vs client is just a runtime detail.',
+      'Write React components as Effect programs — state and logic in Effect services, React for render. One component, one mount, runs in a SPA, during SSR, or as a React Server Component.',
   },
   nav: {
     thesis: 'Thesis',
@@ -17,7 +17,7 @@ const en: SiteContent = {
     titleLead: 'Write React components as',
     titleGradient: 'Effect programs.',
     subtitle:
-      'The same component, the same mount, runs in a SPA, during SSR, or as a React Server Component — server vs client is just a [[runtime detail]].',
+      'Your state and logic live in Effect services — React is purely the [[render layer]]. One component, one mount, runs in a SPA, during SSR, or as a React Server Component.',
     ctaPrimary: 'Read the docs',
     ctaSecondary: 'Star on GitHub',
     installNote: 'MIT · React 19+ · Effect v4 · ~1.7 kB',
@@ -30,15 +30,15 @@ const en: SiteContent = {
     captionEnd: 'speaks both.',
   },
   callsite: {
-    caption: 'A service and a real React hook in one body — [[checked at compile time]].',
+    caption: 'A service, its state read reactively — [[checked at compile time]].',
   },
   thesis: {
     label: 'The thesis',
     title: 'Two fibers, one component',
     body: 'React and Effect both schedule work on fibers. effract drives a component’s generator inside React’s render pass — one stream of yield* for both. [[100% real React, no forked reconciler]].',
     rows: [
-      { write: 'yield* Stats', does: 'a service, resolved synchronously' },
-      { write: 'yield* hook(useState(0))', does: 'a real React hook, stable order' },
+      { write: 'yield* Cart', does: 'a service, resolved synchronously' },
+      { write: 'yield* cart.total', does: 'reactive state — read + subscribe' },
       { write: 'yield* query(data, id)', does: 'suspends; loading tracked in the type' },
       { write: 'a typed failure', does: 'renders a .catch fallback' },
     ],
@@ -68,25 +68,27 @@ const en: SiteContent = {
     caption: 'The obligation bubbles to the root — one boundary discharges the subtree.',
   },
   philosophy: {
-    label: 'Philosophy',
-    title: 'Keep the rendering layer boring',
-    body: 'A React component should be [[almost dull]] — structure and interaction, nothing more. The hard parts live [[outside React]], resolved at the composition boundary and handed to your JSX as a typed result.',
+    label: 'The idea',
+    title: 'Logic in Effect, React for render',
+    body: 'A React component should be [[almost dull]] — structure and interaction, nothing more. State, and the logic over it, live [[outside React]], in Effect services; the component reads a typed result with yield* and renders. No useState, no logic in the tree.',
+    caption:
+      'All the logic — state, derivation, mutation — in one service. The component only [[reads and renders]].',
     points: [
       {
-        title: 'The hard parts live in Effect',
-        desc: 'Retries, concurrency, caching, tracing — Effect’s job, outside the render tree, testable and reusable.',
+        title: 'State and logic in services',
+        desc: 'Atoms, derivation (derive), retries, concurrency, caching — Effect’s job, in services outside the render tree. Testable without React; reusable everywhere.',
       },
       {
-        title: 'Async composition becomes trivial',
-        desc: 'No loading flags, no cascading hooks. Everything resolves before render; the body reads top-to-bottom.',
+        title: 'The component only renders',
+        desc: 'It reads state with yield* and fires events. Nothing to memoize, no cascading hooks — the body reads top-to-bottom and is too thin to need a test.',
       },
       {
-        title: 'RSC’s good idea, without the server',
-        desc: 'RSC’s real win was resolving dependencies at the composition root. effract keeps that, drops the lock-in.',
+        title: 'Universal by construction',
+        desc: 'A service runs in a SPA, under SSR, in a background fiber, or on the server for an RSC — its state is reachable anywhere an Effect runs.',
       },
       {
         title: 'One primitive, not a zoo',
-        desc: 'Retire useEffect, a fetch library, context, a store, server actions — one yield* covers all three.',
+        desc: 'Retire useState, useEffect, a fetch library, context, a store, server actions — one yield* covers them.',
       },
     ],
   },
@@ -107,14 +109,6 @@ const en: SiteContent = {
         desc: 'Reading a service is a [[Context lookup]], not an async round-trip. No Effect.runSync at the call site.',
       },
       {
-        title: 'Signals without ceremony',
-        desc: 'observe($ => $(count) * 2) re-renders [[exactly when]] an atom you read changes. No provider, no selectors.',
-      },
-      {
-        title: 'RSC, natively',
-        desc: 'The same value renders as an [[async Server Component]] with the same mount — one package, no separate server form, no client JS.',
-      },
-      {
         title: 'Tiny, and never doubled',
         desc: 'The client core is ~1.7 kB min+gzip. React and Effect stay peers (your app’s copy) — [[never bundled or shipped twice]], even across minor versions.',
       },
@@ -126,7 +120,7 @@ const en: SiteContent = {
   },
   cta: {
     title: 'Write it once. Run it anywhere a runtime does.',
-    body: 'MIT, on npm. Start with the docs, or the nine call-site recipes.',
+    body: 'MIT, on npm. Start with the docs, or the thirteen call-site recipes.',
     primary: 'Get started',
     secondary: 'View on GitHub',
   },

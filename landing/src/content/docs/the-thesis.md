@@ -18,7 +18,8 @@ and answers each `yield*` based on what it is:
 | You write | effract does |
 | --- | --- |
 | `yield* SomeService` | resolves it synchronously from the runtime's `Context` |
-| `yield* hook(useState(0))` | the hook already ran inline — keeps its place in React's hook order |
+| `yield* someAtom` | reads reactive service state — its value, and subscribes this component |
+| `yield* hook(useRef(el))` | the hook already ran inline — keeps its place in React's hook order |
 | `yield* someAsyncEffect` | suspends through React's `use`, resumes inline on the retry |
 | a typed failure | renders a [`.catch`](/docs/errors/) fallback for its `_tag` — else throws to the nearest boundary |
 
@@ -28,11 +29,13 @@ order across renders. effract cooperates with React's reconciler; it never repla
 ## Why `hook(...)`
 
 `hook(value)` lifts an already-evaluated React hook result into the `yield*` channel, so a component
-body reads as one uniform stream of `yield*` whether the value comes from Effect or from React:
+body reads as one uniform stream of `yield*` whether the value comes from Effect or from React. Reach for
+it for the things that are genuinely React's — a DOM ref, a transition, an ephemeral bit of UI. App state
+and logic belong in a service (see [reactivity](/docs/signals/)), read with `yield*`.
 
 ```tsx
-const [tab, setTab] = yield* hook(useState('overview'));
-const ref = yield* hook(useRef<HTMLDivElement>(null));
+const ref = yield* hook(useRef<HTMLDivElement>(null)); // a DOM ref — React's job
+const [open, setOpen] = yield* hook(useState(false)); // an ephemeral UI flag
 ```
 
 The hook is called _inline_ — `hook` only makes the result yieldable. Since the body runs inside the

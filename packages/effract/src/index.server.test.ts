@@ -16,8 +16,24 @@ describe('server entry surface (react-server condition)', () => {
     expect(typeof server.driveServerRec).toBe('function');
   });
 
+  it('exports the server-safe reactive state primitives', () => {
+    // `atom`/`derive` are pure Effect-backed state — no React — so a *universal*
+    // service that holds reactive state resolves under the `react-server`
+    // condition too. Only the hooks that *read* an atom in a component are absent.
+    expect(typeof server.atom).toBe('function');
+    expect(typeof server.derive).toBe('function');
+  });
+
   it('does NOT export client-only APIs — they cannot exist in a Server Component', () => {
-    for (const name of ['hook', 'observe', 'atom', 'useAtom', 'useAtomValue', 'Runtime', 'view']) {
+    for (const name of [
+      'hook',
+      'observe',
+      'Observe',
+      'useAtom',
+      'useAtomValue',
+      'Runtime',
+      'view',
+    ]) {
       expect(name in server, `${name} must not be exported from the server entry`).toBe(false);
     }
   });

@@ -15,6 +15,7 @@ import type {
   Executor,
   InterpreterDeps,
   Placer,
+  Reader,
   SuspensableResolver,
   RenderCache,
   Suspender,
@@ -51,6 +52,9 @@ const neverResolveSuspensable: SuspensableResolver = {
   },
 };
 
+/** A trivial reader: the current value, no subscription (enough for these tests). */
+const staticReader: Reader = { read: (atomRead) => atomRead.value };
+
 const makeDeps = (
   layer: Layer.Layer<never, never, never>,
   suspender: Suspender = neverSuspend,
@@ -59,6 +63,7 @@ const makeDeps = (
   suspender,
   cache: new Map(),
   suspensableResolver: neverResolveSuspensable,
+  reader: staticReader,
   placer: neverPlace,
 });
 
@@ -129,6 +134,7 @@ describe('driveRec', () => {
       executor: deps.executor,
       cache: deps.cache,
       suspensableResolver: neverResolveSuspensable,
+      reader: staticReader,
       suspender: { use: () => 99 as never },
       placer: neverPlace,
     };
@@ -162,6 +168,7 @@ describe('driveRec', () => {
         suspender: neverSuspend,
         cache,
         suspensableResolver: neverResolveSuspensable,
+        reader: staticReader,
         placer: neverPlace,
       }),
     ).toThrow(TypeError);

@@ -164,6 +164,50 @@ export const query = <A, E, R>(
 export const isSuspensable = (u: unknown): u is Suspensable<unknown, unknown, unknown> =>
   typeof u === 'object' && u !== null && SuspensableTypeId in u;
 
+/** Brand identifying a reactive atom instruction. */
+export const AtomTypeId = Symbol.for('@tmonier/effract/Atom');
+export type AtomTypeId = typeof AtomTypeId;
+
+/**
+ * The fifth kind of yieldable: a *reactive atom read*. Reactive state lives in
+ * the Effect world — an atom, usually held by a service. Yielding one reads its
+ * current value *and* subscribes the component, so it re-renders precisely when
+ * that atom changes: `const n = yield* count`. It carries no `E`/`R`/`S` — a
+ * read is synchronous, needs nothing, and cannot fail. Derived atoms
+ * (`derive(...)`) are `ReadableAtom`s too, so they read and yield identically.
+ * The concrete atom is built in the React binding; the domain only names the
+ * contract — a value you can read, subscribe to, and `yield*`.
+ */
+export interface ReadableAtom<out A> {
+  readonly [AtomTypeId]: true;
+  /** The current value — read imperatively (in an event handler or a method). */
+  readonly value: A;
+  /** Subscribe to changes; returns an unsubscribe. Backs the in-render read. */
+  subscribe(listener: () => void): () => void;
+  /**
+   * Derive a new read-only atom from *this one's* value — the ergonomic,
+   * single-source form of `derive`. The callback receives the value directly (no
+   * `$`), and the result recomputes when this atom changes; chain it freely.
+   * For a value computed from *several* atoms, reach for the free `derive(($) => …)`.
+   *
+   * ```ts
+   * const count = items.derive((list) => list.length);
+   * ```
+   */
+  derive<B>(f: (value: A) => B): ReadableAtom<B>;
+  [Symbol.iterator](): Iterator<ReadableAtom<A>, A>;
+}
+
+/** A writable reactive atom — a {@link ReadableAtom} you can also `set`/`update`. */
+export interface Atom<in out A> extends ReadableAtom<A> {
+  set(value: A): void;
+  update(update: (previous: A) => A): void;
+}
+
+/** Type guard: is this yielded instruction a reactive atom read? */
+export const isAtom = (u: unknown): u is ReadableAtom<unknown> =>
+  typeof u === 'object' && u !== null && AtomTypeId in u;
+
 /**
  * The phantom marker of an *unhandled loading obligation*. A body that yields a
  * {@link Suspensable} (or places a child that still carries one) has this in its
@@ -179,19 +223,21 @@ export interface Suspends {
   readonly ['@tmonier/effract/loading']: true;
 }
 
-/** Everything a component body may `yield*`: an Effect, a hook, a child placement, or a query. */
+/** Everything a body may `yield*`: an Effect, a hook, a placement, a query, or an atom read. */
 export type Yieldable<A> =
   | Effect.Effect<A, unknown, unknown>
   | Hook<A>
   | RecPlacement<A, unknown, unknown>
-  | Suspensable<A, unknown, unknown>;
+  | Suspensable<A, unknown, unknown>
+  | ReadableAtom<A>;
 
 /** The generator a React Effect Component body produces. */
 export type RecGenerator<A> = Generator<
   | AnyEffect
   | Hook<unknown>
   | RecPlacement<unknown, unknown, unknown>
-  | Suspensable<unknown, unknown, unknown>,
+  | Suspensable<unknown, unknown, unknown>
+  | ReadableAtom<unknown>,
   A,
   unknown
 >;

@@ -12,7 +12,7 @@ import * as Context from 'effect/Context';
 import * as Duration from 'effect/Duration';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
-import { AtomRef } from 'effect/unstable/reactivity';
+import { atom } from '@tmonier/effract';
 
 // --- Config: app constants, and a dependency of Greeter -----------------------
 
@@ -55,7 +55,7 @@ export const GreeterLive: Layer.Layer<Greeter, never, Config> = Layer.effect(Gre
   }),
 );
 
-// --- Store: stateful, backed by reactive AtomRefs the signals bridge observes --
+// --- Store: stateful, holding reactive atoms + a derived value the bridge reads --
 
 export interface Todo {
   readonly id: number;
@@ -63,47 +63,59 @@ export interface Todo {
   readonly done: boolean;
 }
 
-export class Store extends Context.Service<
-  Store,
-  {
-    readonly likes: AtomRef.AtomRef<number>;
-    readonly todos: AtomRef.AtomRef<ReadonlyArray<Todo>>;
-    readonly like: () => void;
-    readonly addTodo: (text: string) => void;
-    readonly toggleTodo: (id: number) => void;
-  }
->()('shared/Store') {}
-
-export const StoreLive: Layer.Layer<Store> = Layer.sync(Store)(() => {
-  const likes = AtomRef.make(0);
-  const todos = AtomRef.make<ReadonlyArray<Todo>>([
-    { id: 1, text: 'Read a service with yield*', done: true },
-    { id: 2, text: 'Hold state with a real React hook', done: true },
-    { id: 3, text: 'Run the same component on the server', done: false },
-  ]);
-  let nextId = 4;
-  return {
-    likes,
-    todos,
-    like: () => {
-      likes.update((n) => n + 1);
-    },
-    addTodo: (text) => {
+// The shape is inferred from `make`; the Live layer is a `static`. `make` is an
+// Effect (here sync), so a service that needs *other* services would `Effect.gen`
+// and `yield*` them, then `Layer.provide` on the layer — exactly like `Greeter`.
+export class Store extends Context.Service<Store>()('shared/Store', {
+  make: Effect.sync(() => {
+    const likes = atom(0);
+    const todos = atom<ReadonlyArray<Todo>>([
+      { id: 1, text: 'Read a service with yield*', done: true },
+      { id: 2, text: 'Keep all state in the service', done: true },
+      { id: 3, text: 'Run the same component on the server', done: false },
+    ]);
+    const draft = atom('');
+    const remaining = todos.derive((list) => list.filter((todo) => !todo.done).length); // derived
+    let nextId = 4;
+    const addTodo = (text: string): void => {
       const id = nextId;
       nextId += 1;
       todos.update((list) => [...list, { id, text, done: false }]);
-    },
-    toggleTodo: (id) => {
-      todos.update((list) => list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-    },
-  };
-});
+    };
+    return {
+      likes,
+      todos,
+      draft,
+      remaining,
+      like: (): void => {
+        likes.update((n) => n + 1);
+      },
+      addTodo,
+      toggleTodo: (id: number): void => {
+        todos.update((list) => list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+      },
+      setDraft: (text: string): void => {
+        draft.set(text);
+      },
+      // Read + write atoms straight from the runtime — no component involved.
+      submitDraft: (): void => {
+        const text = draft.value.trim();
+        if (text.length > 0) {
+          addTodo(text);
+          draft.set('');
+        }
+      },
+    };
+  }),
+}) {
+  static readonly layer = Layer.effect(Store, Store.make);
+}
 
-// --- AppLive: the composition. Greeter receives Config; everything is merged. --
+// --- AppLive: the composition. `provideMerge` feeds Config into Greeter and keeps
+// both, so the tree can read Config directly too. Then merge the rest. -----------
 
 export const AppLive: Layer.Layer<Stats | Greeter | Store | Config> = Layer.mergeAll(
   StatsLive,
-  StoreLive,
-  ConfigLive,
-  Layer.provide(GreeterLive, ConfigLive),
+  Store.layer,
+  Layer.provideMerge(GreeterLive, ConfigLive),
 );

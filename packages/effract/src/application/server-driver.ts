@@ -10,6 +10,7 @@
  * yields differs. That is the whole point: one component, two fibers.
  */
 import {
+  isAtom,
   isHook,
   isPlacement,
   isSuspensable,
@@ -65,6 +66,12 @@ export const driveServerRec = async <A>(
         instruction.rec.catchHandlers as CatchDispatch<unknown> | undefined,
       );
       step = gen.next(node);
+      continue;
+    }
+    if (isAtom(instruction)) {
+      // Reactive state has no live subscription on the server — read its current
+      // value. (Atom-holding services are client concerns; this is the safe read.)
+      step = gen.next(instruction.value);
       continue;
     }
     // A suspensable is its effect here; an effect is itself. Either way, run and catch.

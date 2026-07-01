@@ -5,7 +5,7 @@
  * plain fakes.
  */
 import type * as Exit from 'effect/Exit';
-import type { AnyEffect, RecPlacement, Suspensable } from '#domain/protocol.ts';
+import type { AnyEffect, ReadableAtom, RecPlacement, Suspensable } from '#domain/protocol.ts';
 
 /**
  * Something that can run an Effect. Backed in production by a `ManagedRuntime`
@@ -72,10 +72,22 @@ export interface Placer {
   place(placement: RecPlacement<unknown, unknown, unknown>): unknown;
 }
 
+/**
+ * Reads a yielded reactive atom to its current value and subscribes the render
+ * to it. Injected because the subscription is React's (`useSyncExternalStore`) —
+ * the interpreter stays React-free and just asks for the value. Called once per
+ * atom read, in the body's deterministic order, so the underlying hook keeps a
+ * stable order across renders.
+ */
+export interface Reader {
+  read<A>(atom: ReadableAtom<A>): A;
+}
+
 export interface InterpreterDeps {
   readonly executor: Executor;
   readonly suspender: Suspender;
   readonly cache: RenderCache;
   readonly suspensableResolver: SuspensableResolver;
+  readonly reader: Reader;
   readonly placer: Placer;
 }

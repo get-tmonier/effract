@@ -72,6 +72,7 @@ export interface SiteContent {
     readonly label: string;
     readonly title: string;
     readonly body: string;
+    readonly caption: string;
     readonly points: readonly Feature[];
   };
   readonly features: {

@@ -4,8 +4,8 @@
 
 <p align="center">
   <strong>Write React components as Effect programs.</strong><br/>
-  The same component — and the same <code>mount</code> — runs in a SPA, during SSR, or as a React Server Component —<br/>
-  <em>"server vs client" becomes an implementation detail the bundler resolves, not something you type.</em>
+  Your state and logic live in Effect services — React is purely the render layer.<br/>
+  <em>The same component — and the same <code>mount</code> — runs in a SPA, during SSR, or as an RSC.</em>
 </p>
 
 <p align="center">
@@ -27,17 +27,19 @@
 ---
 
 ```tsx
-const Counter = rec(function* () {
-  const stats = yield* Stats; // an Effect service, from the runtime
-  const [n, setN] = yield* hook(useState(0)); // a real React hook
-  return <Panel n={n} total={stats.total} onTab={setN} />; // <Panel> is plain React
+const Summary = rec(function* () {
+  const cart = yield* Cart; // state + logic live in an Effect service
+  const total = yield* cart.total; // reactive read — re-renders precisely when it changes
+  const box = yield* hook(useRef<HTMLDivElement>(null)); // a genuine React hook, for a DOM ref
+  return <Panel ref={box} total={total} onAdd={cart.add} />; // <Panel> is plain React
 });
 
-createRoot(el).render(mount(AppLive, Counter)); // missing service → compile error
+createRoot(el).render(mount(AppLive, Summary)); // missing service → compile error
 ```
 
-One body, two languages, a single stream of `yield*` — interpreted **inside React's render pass**. The hooks
-are genuine React hooks; the services come from an Effect `Context`. 100% real React, no forked reconciler.
+One body, two languages, a single stream of `yield*` — interpreted **inside React's render pass**. The
+service (its state, its logic) comes from an Effect `Context`; the hook is a genuine React hook, for the
+things that are genuinely React's job. 100% real React, no forked reconciler.
 
 **The whole public API is three primitives** — everything above is already all of them:
 
@@ -45,11 +47,64 @@ are genuine React hooks; the services come from an Effect `Context`. 100% real R
 - **`hook`** — bridge a real React hook into the `yield*` stream.
 - **`mount`** — render the tree under a runtime. Same call on the client and the server.
 
-That's it. (Signals — `atom` / `observe` — are an optional extra for precise reactivity.)
+That's it. (State lives in Effect too — the **atom toolkit** below keeps logic out of React, so
+components stay pure render.)
 
 > **Incremental, not a rewrite.** Plain React components stay ordinary `<Component />` JSX. You write a
 > **REC** with `rec(...)` _only_ where a component reaches for a service (or a hook bridged through Effect);
 > the two compose freely in the same tree.
+
+## The idea — logic in Effect, React for render
+
+The pitch effract is really about: **state, and the logic over it, live in Effect services; React only
+renders.** No `useState` threading business rules through a component, no `useEffect` orchestration, no
+logic trapped in the render tree. A component reads a service with `yield*` and returns JSX — that's the
+whole job. React hooks stay for the things that are genuinely React's (a DOM ref, a transition); everything
+else is an Effect.
+
+```tsx
+// ❌ logic in the component — tied to React, recomputed each render, hard to test on its own
+function Cart() {
+  const [items, setItems] = useState<Item[]>([]);
+  const total = useMemo(() => items.reduce((n, i) => n + i.price, 0), [items]);
+  const add = (i: Item) => setItems((xs) => [...xs, i]);
+  return <button onClick={() => add(coffee)}>add · ${total}</button>;
+}
+
+// ✅ logic in a service — testable, universal, reusable; the component only renders
+class Cart extends Context.Service<Cart>()('Cart', {
+  make: Effect.sync(() => {
+    const items = atom<ReadonlyArray<Item>>([]);
+    return {
+      items,
+      total: items.derive((xs) => xs.reduce((n, i) => n + i.price, 0)), // derived, in Effect
+      add: (item: Item) => items.update((xs) => [...xs, item]),
+    };
+  }),
+}) {
+  static layer = Layer.effect(Cart, Cart.make);
+}
+
+const CartButton = rec(function* () {
+  const cart = yield* Cart;
+  const total = yield* cart.total;                            // reactive read — precise re-render
+  return <button onClick={() => cart.add(coffee)}>add · ${total}</button>;
+});
+```
+
+Why that's the path worth taking:
+
+- **Testable without React.** A service is a plain Effect program — exercise it with Effect's tooling, no
+  renderer, no `act`, no DOM. The component left behind is too thin to need a test.
+- **Universal by construction.** The same service runs in a SPA, under SSR, in a background fiber, or on the
+  server for an RSC — its state is reachable anywhere an Effect runs. You don't re-implement logic per
+  environment.
+- **Precise, not manual.** A component re-renders only on the atoms it actually read; derivation is declared
+  once with `derive`, not re-`useMemo`'d at every call site.
+- **Composable as data.** Computed (`derive`), async-computed (`derive.effect`), per-entity (`atomFamily`),
+  coalesced writes (`batch`) — all ordinary values in the Effect world, not hook gymnastics.
+
+The **Reactivity** section below is the full toolkit; every [recipe](./examples/src) is written this way.
 
 ## Two fibers, one component
 
@@ -59,7 +114,8 @@ drives _synchronously, during render_, answering each `yield*` by what it is:
 | You write | effract does |
 | --- | --- |
 | `yield* SomeService` | resolves it synchronously from the runtime's `Context` |
-| `yield* hook(useState(0))` | a genuine React hook — keeps its place in React's hook order |
+| `yield* someAtom` | reads reactive service state — its value, and subscribes this component |
+| `yield* hook(useRef(el))` | a genuine React hook — keeps its place in React's hook order |
 | `yield* someAsyncEffect` | suspends through React Suspense / `use`, resumes inline |
 | a typed failure | renders a [`.catch`](#typed-errors) fallback for its `_tag` — else throws to the nearest error boundary |
 
@@ -120,23 +176,36 @@ One package. Its only peers are **React 19+** and **Effect v4** — nothing else
 Flight runtime (see [Bundle size](#bundle-size)).
 
 ```tsx
-import { mount, rec, hook } from '@tmonier/effract';
+import { mount, rec, atom } from '@tmonier/effract';
 import { createRoot } from 'react-dom/client';
-import { useState } from 'react';
+import * as Context from 'effect/Context';
+import * as Effect from 'effect/Effect';
+import * as Layer from 'effect/Layer';
 
 const Card = ({ children }: { children: React.ReactNode }) => <section>{children}</section>; // plain React
 
-const Counter = rec(function* () {
-  const stats = yield* Stats; // a service → it's a REC
-  const [n, setN] = yield* hook(useState(0));
-  return <button onClick={() => setN(n + 1)}>{n} · {stats.total}</button>;
+// State and the logic over it live in a service, in Effect.
+// The shape is inferred from make; the Live layer is a static.
+class Counter extends Context.Service<Counter>()('Counter', {
+  make: Effect.sync(() => {
+    const count = atom(0);
+    return { count, inc: () => count.update((n) => n + 1) };
+  }),
+}) {
+  static layer = Layer.effect(Counter, Counter.make);
+}
+
+const CounterView = rec(function* () {
+  const counter = yield* Counter; // a service → it's a REC
+  const n = yield* counter.count; // reactive read — no useState, no logic
+  return <button onClick={() => counter.inc()}>{n}</button>;
 });
 
 const App = rec(function* () {
-  return <Card>{yield* Counter}</Card>; // plain JSX + a yielded REC
+  return <Card>{yield* CounterView}</Card>; // plain JSX + a yielded REC
 });
 
-createRoot(document.getElementById('root')!).render(mount(AppLive, App));
+createRoot(document.getElementById('root')!).render(mount(Counter.layer, App));
 ```
 
 Full guide and docs → **[effract.tmonier.com](https://effract.tmonier.com)**.
@@ -165,18 +234,60 @@ imported externally and resolved to **your app's single copy**. Three things kee
 - **De-duplication in the Vite plugin** (`@tmonier/effract-vite`) forces a single `react`, `react-dom`, and
   `effect` even if a transitive dependency pulls another, so you never ship React or Effect twice.
 
-## Reactivity
+## Reactivity — logic in Effect, React for render
 
-effract bridges Effect's reactive cell (`AtomRef`) to React with precise re-renders — no stray
-`Effect.runSync` at the call site. State can also live _inside a service_, reachable from anywhere an
-Effect runs, including the server.
+The point of effract: **state and the logic over it live in the Effect world; React only renders.** No
+`useState`, no derivation recomputed in a component, no `Effect.runSync` at the call site. An `atom` is a
+reactive cell held by a *service*; a component reads it by `yield*`ing it (read + precise subscribe) and
+mutates it by calling a service method. The state belongs to the runtime, so it's reachable from anywhere
+an Effect runs — other components, background fibers, the server.
 
 ```tsx
-const likes = atom(0);
-const doubled = observe(($) => $(likes) * 2); // re-renders only when an atom it read changes
-const [n, setN] = useAtom(likes); // the useState shape, backed by Effect
-<Observe>{($) => <b>{$(likes)}</b>}</Observe>; // inline in JSX
+// The shape is inferred from make; the Live layer is a static. make is an
+// Effect, so this scales up — Effect.gen to depend on other services.
+class Cart extends Context.Service<Cart>()('Cart', {
+  make: Effect.sync(() => {
+    const items = atom<ReadonlyArray<Item>>([]);
+    const total = items.derive((xs) => xs.reduce((n, i) => n + i.price, 0)); // no $ — one source
+    return { items, total, add: (item: Item) => items.update((xs) => [...xs, item]) };
+  }),
+}) {
+  static layer = Layer.effect(Cart, Cart.make);
+}
+
+const CartSummary = rec(function* () {
+  const cart = yield* Cart;
+  const total = yield* cart.total;                // read + subscribe — re-renders only when total changes
+  return <button onClick={() => cart.add(coffee)}>add · ${total}</button>;
+}); // no state, no logic — pure render + event
 ```
+
+**The atom toolkit** — derivation and state, expressed as data in the Effect world:
+
+| | |
+| --- | --- |
+| `atom(initial)` | a writable reactive cell (`.value` / `.set` / `.update`) |
+| `yield* atom` | read it in a REC — reads the value and subscribes this component |
+| `atom.derive(v => …)` | **computed** from one atom — the value handed over directly, no `$`; chains |
+| `derive(($) => …)` | **computed** from *several* atoms — `$` tracks each; recomputes on change |
+| `derive.writable(read, write)` | a **two-way** computed atom — `set` flows back to the sources |
+| `derive.effect(($) => effect)` | an **async** computed atom — suspends while it runs, refetches on change, carries the `S` loading obligation |
+| `atomFamily(make)` | one memoised atom **per key** — per-entity state as a lookup |
+| `batch(writes)` | coalesce a burst of writes into **one** notification wave |
+
+And the reads, for a value local to a component rather than owned by a service — no `$`:
+
+```tsx
+const n = useAtomValue(likes);          // read one atom (re-renders on change); yield* in a REC
+const twice = useAtomValue(doubled);    // read a derived atom — derive it outside the component
+const [v, setV] = useAtom(likes);       // read + write, the useState shape, backed by Effect
+<Observe>{($) => <b>{$(likes)}</b>}</Observe>; // the inline-JSX form, when you don't hoist a derive
+```
+
+See recipes [05](./examples/src/05-stateful-service.tsx) (state + derived state in a service),
+[10](./examples/src/10-derived-state.tsx) (`derive` / `derive.writable`),
+[11](./examples/src/11-async-derived.tsx) (`derive.effect`), and
+[12](./examples/src/12-atom-collections.tsx) (`atomFamily` / `batch`).
 
 ## Typed errors
 
@@ -277,7 +388,7 @@ client islands you `mount`, and the type system enforces that line.
 
 ## Recipes & examples
 
-Nine typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
+Thirteen typechecked, copy-pasteable call sites in [`examples/`](./examples/src), and four full integrations
 in [`apps/`](./apps) — all rendering the **same shared components** to prove the abstraction holds:
 
 | App | Environment |

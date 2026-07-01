@@ -2,9 +2,9 @@
  * Recipe 06 — composing layers.
  *
  * Services depend on services. `Db` is built from `Config` with `Layer.effect`;
- * `Layer.provide` feeds Config into Db; `Layer.mergeAll` assembles the app layer
- * `mount` receives. The component just reads the finished result — all
- * the wiring is ordinary Effect, and the same layer drives client and server.
+ * `Layer.provideMerge` feeds Config into Db *and keeps both* in the result, so
+ * the component can read either. The component just reads the finished result —
+ * all the wiring is ordinary Effect, and the same layer drives client and server.
  */
 import type { ReactNode } from 'react';
 import * as Context from 'effect/Context';
@@ -23,8 +23,8 @@ const DbLive: Layer.Layer<Db, never, Config> = Layer.effect(Db)(
   }),
 );
 
-// Provide Config into Db, then merge both so components can read either.
-const AppLive = Layer.mergeAll(ConfigLive, Layer.provide(DbLive, ConfigLive));
+// Feed Config into Db and keep both available — one combinator, no repeated ConfigLive.
+const AppLive = Layer.provideMerge(DbLive, ConfigLive);
 
 export const Health = rec(function* () {
   const db = yield* Db;

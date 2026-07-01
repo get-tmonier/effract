@@ -23,6 +23,7 @@ import {
   type CatchDispatch,
   type ErrorsOf,
   type Hook,
+  type ReadableAtom,
   type RecBody,
   type RecHandle,
   type RecPlacement,
@@ -56,7 +57,8 @@ type AnyYield =
   | AnyEffect
   | Hook<unknown>
   | RecPlacement<ReactNode, unknown, unknown>
-  | Suspensable<unknown, unknown, unknown>;
+  | Suspensable<unknown, unknown, unknown>
+  | ReadableAtom<unknown>;
 
 interface RecCore<P, E, R, S> extends RecHandle<ReactNode> {
   readonly [RecTypeId]: true;
