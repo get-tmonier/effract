@@ -71,6 +71,7 @@ const fr: SiteContent = {
     label: 'L’idée',
     title: 'La logique dans Effect, React pour le rendu',
     body: 'Un composant React doit être [[presque banal]] — structure et interaction, rien de plus. L’état, et la logique qui va avec, vivent [[hors de React]], dans des services Effect ; le composant lit un résultat typé avec yield* et l’affiche. Pas de useState, pas de logique dans l’arbre.',
+    caption: 'Toute la logique — état, dérivation, mutation — dans un seul service. Le composant ne fait que [[lire et afficher]].',
     points: [
       {
         title: 'L’état et la logique dans les services',
@@ -105,14 +106,6 @@ const fr: SiteContent = {
       {
         title: 'Les services, en synchrone',
         desc: 'Lire un service est une [[lecture de Context]], pas un aller-retour async. Aucun Effect.runSync au call site.',
-      },
-      {
-        title: 'L’état dans les services, pas useState',
-        desc: 'Les atomes vivent dans Effect ; un composant en lit un avec yield* et se re-rend [[exactement quand]] il change. derive, atomFamily, batch — sans provider, sans sélecteurs.',
-      },
-      {
-        title: 'RSC, nativement',
-        desc: 'La même valeur devient un [[Server Component async]] avec le même mount — un seul package, aucune forme serveur distincte, aucun JS client.',
       },
       {
         title: 'Léger, et jamais en double',

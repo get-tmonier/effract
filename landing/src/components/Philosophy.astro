@@ -1,4 +1,5 @@
 ---
+import CodeWindow from '#components/CodeWindow.astro';
 import { emphasize } from '#lib/text';
 import type { SiteContent } from '#i18n/types';
 
@@ -6,6 +7,28 @@ interface Props {
   content: SiteContent;
 }
 const { philosophy } = Astro.props.content;
+
+const code = `// The logic — state, derivation, mutation — in one service.
+// The shape is inferred from make; scale it up with Effect.gen + deps.
+class Cart extends Context.Service<Cart>()('Cart', {
+  make: Effect.sync(() => {
+    const items = atom<Item[]>([])
+    return {
+      items,
+      total: items.derive(xs => xs.reduce((n, i) => n + i.price, 0)),
+      add: (item: Item) => items.update(xs => [...xs, item]),
+    }
+  }),
+}) {
+  static layer = Layer.effect(Cart, Cart.make)
+}
+
+// The component only reads and renders — no useState, no logic
+const Summary = rec(function* () {
+  const cart = yield* Cart
+  const total = yield* cart.total       // reactive read
+  return <button onClick={() => cart.add(coffee)}>add · \${total}</button>
+})`;
 ---
 
 <section class="relative overflow-hidden border-y border-line bg-bg-2/40">
@@ -15,6 +38,14 @@ const { philosophy } = Astro.props.content;
       <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{philosophy.label}</p>
       <h2 class="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{philosophy.title}</h2>
       <p class="mt-5 leading-relaxed text-ink-dim text-pretty" set:html={emphasize(philosophy.body)} />
+    </div>
+
+    <div class="reveal mx-auto mt-12 max-w-3xl" style="--reveal-delay: 90ms">
+      <CodeWindow code={code} title="cart.ts" />
+      <p
+        class="mt-4 text-center text-sm text-muted text-pretty"
+        set:html={emphasize(philosophy.caption)}
+      />
     </div>
 
     <div class="mt-14 grid grid-cols-1 gap-x-10 gap-y-10 md:grid-cols-2">

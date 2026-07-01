@@ -71,6 +71,7 @@ const en: SiteContent = {
     label: 'The idea',
     title: 'Logic in Effect, React for render',
     body: 'A React component should be [[almost dull]] — structure and interaction, nothing more. State, and the logic over it, live [[outside React]], in Effect services; the component reads a typed result with yield* and renders. No useState, no logic in the tree.',
+    caption: 'All the logic — state, derivation, mutation — in one service. The component only [[reads and renders]].',
     points: [
       {
         title: 'State and logic in services',
@@ -105,14 +106,6 @@ const en: SiteContent = {
       {
         title: 'Services, synchronously',
         desc: 'Reading a service is a [[Context lookup]], not an async round-trip. No Effect.runSync at the call site.',
-      },
-      {
-        title: 'State in services, not useState',
-        desc: 'Atoms live in Effect; a component reads one with yield* and re-renders [[exactly when]] it changes. derive, atomFamily, batch — no provider, no selectors.',
-      },
-      {
-        title: 'RSC, natively',
-        desc: 'The same value renders as an [[async Server Component]] with the same mount — one package, no separate server form, no client JS.',
       },
       {
         title: 'Tiny, and never doubled',
