@@ -5,6 +5,7 @@
 import { act, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
 import {
   Observe,
@@ -19,6 +20,12 @@ import {
 } from '../../index.client.ts';
 
 Reflect.set(globalThis, 'IS_REACT_ACT_ENVIRONMENT', true);
+
+const flush = (): Promise<void> =>
+  act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 
 let container: HTMLDivElement;
 beforeEach(() => {
@@ -260,4 +267,105 @@ describe('reactivity', () => {
 
     await act(async () => root.unmount());
   });
+
+  it('derive.effect suspends, resolves, and refetches when a source atom changes', async () => {
+    const calls: number[] = [];
+    // A per-id gate so we can observe the loading frame deterministically.
+    const gates = new Map<number, { promise: Promise<number>; settle: (n: number) => void }>();
+    const gateFor = (id: number): { promise: Promise<number>; settle: (n: number) => void } => {
+      const existing = gates.get(id);
+      if (existing) {
+        return existing;
+      }
+      let settle: (n: number) => void = () => {};
+      const promise = new Promise<number>((resolve) => {
+        settle = resolve;
+      });
+      const gate = { promise, settle };
+      gates.set(id, gate);
+      return gate;
+    };
+
+    const sku = atom(1);
+    // Read the atom *synchronously* in the selector (so it is tracked), then use
+    // the value inside the effect.
+    const price = derive.effect(($) => {
+      const id = $(sku);
+      return Effect.promise(() => {
+        calls.push(id);
+        return gateFor(id).promise;
+      });
+    });
+    const Price = rec(function* () {
+      const p = yield* price;
+      return <span data-x="price">{p}</span>;
+    }).suspense(<i>loading</i>);
+
+    const root = createRoot(container);
+    await act(async () => root.render(mount(Layer.empty, Price)));
+    expect(container.textContent).toContain('loading'); // suspended on the effect
+    expect(calls).toEqual([1]);
+
+    await act(async () => {
+      gateFor(1).settle(10);
+      await gateFor(1).promise;
+    });
+    await flush();
+    expect(container.querySelector('[data-x="price"]')?.textContent).toBe('10');
+
+    // A source change re-renders (it subscribed) and refetches, keyed by the new value.
+    await act(async () => sku.set(3));
+    await flush();
+    expect(calls).toEqual([1, 3]);
+    await act(async () => {
+      gateFor(3).settle(30);
+      await gateFor(3).promise;
+    });
+    await flush();
+    expect(container.querySelector('[data-x="price"]')?.textContent).toBe('30');
+
+    await act(async () => root.unmount());
+  });
+
+  it('derive.effect does not refetch when a source is written its current value', async () => {
+    const calls: number[] = [];
+    const sku = atom(2);
+    const price = derive.effect(($) => {
+      const id = $(sku);
+      return Effect.promise(() => {
+        calls.push(id);
+        return Promise.resolve(id * 10);
+      });
+    });
+    const Price = rec(function* () {
+      const p = yield* price;
+      return <span>{p}</span>;
+    }).suspense(<i>loading</i>);
+
+    const root = createRoot(container);
+    await act(async () => root.render(mount(Layer.empty, Price)));
+    await flush();
+    expect(container.textContent).toBe('20');
+    expect(calls).toEqual([2]);
+
+    // Same value → no notification, no re-render, no refetch.
+    await act(async () => sku.set(2));
+    await flush();
+    expect(calls).toEqual([2]);
+
+    await act(async () => root.unmount());
+  });
 });
+
+// --- type-level: derive.effect carries the loading obligation (checked by tsgo) ---
+{
+  const sku = atom(1);
+  const AsyncPrice = rec(function* () {
+    const p = yield* derive.effect(($) => Effect.succeed($(sku) * 10));
+    return <i>{p}</i>;
+  });
+  // @ts-expect-error effract: loading not handled — derive.effect suspends
+  void mount(Layer.empty, AsyncPrice);
+  // ✓ discharged with .suspense:
+  void mount(Layer.empty, AsyncPrice.suspense(<i>loading</i>));
+}

@@ -69,7 +69,7 @@ export type { RuntimeProps } from '#infrastructure/react/runtime.tsx';
 // and drive them); the hooks that read them in a component are client-only, like
 // `hook` itself.
 export { atom, derive, atomFamily, batch } from '#infrastructure/reactivity-core.ts';
-export type { Read, AtomFamily } from '#infrastructure/reactivity-core.ts';
+export type { Read, AtomFamily, AsyncDerived } from '#infrastructure/reactivity-core.ts';
 export {
   observe,
   Observe,

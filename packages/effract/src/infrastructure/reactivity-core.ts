@@ -7,9 +7,16 @@
  * `react/reactivity.tsx`, tagged `'use client'`; only *reading a signal in a
  * component* needs React, not owning one in a service.
  */
+import type * as Effect from 'effect/Effect';
 import * as Equal from 'effect/Equal';
 import { AtomRef } from 'effect/unstable/reactivity';
-import { AtomTypeId, type Atom, type ReadableAtom } from '#domain/protocol.ts';
+import {
+  AtomTypeId,
+  query,
+  type Atom,
+  type ReadableAtom,
+  type Suspensable,
+} from '#domain/protocol.ts';
 
 /** Read an atom inside a `derive`/`observe` selector, subscribing to it. */
 export type Read = <A>(atom: ReadableAtom<A>) => A;
@@ -181,6 +188,7 @@ export const computation = <A>(selector: (read: Read) => A): Computation<A> => {
   let currentDeps: Array<ReadableAtom<unknown>> = [];
   let unsubscribes: Array<() => void> = [];
   let cached: A;
+  let hasCached = false;
   let tracking = false;
 
   const evaluate = (): { value: A; deps: Array<ReadableAtom<unknown>> } => {
@@ -213,6 +221,7 @@ export const computation = <A>(selector: (read: Read) => A): Computation<A> => {
     }
     const changed = !Equal.equals(value, cached);
     cached = value;
+    hasCached = true;
     if (changed) {
       // Snapshot the listeners: one may subscribe/unsubscribe while being notified.
       for (const listener of Array.from(listeners)) {
@@ -222,11 +231,27 @@ export const computation = <A>(selector: (read: Read) => A): Computation<A> => {
   }
 
   return {
-    get: () => (tracking ? cached : evaluate().value),
+    // While tracked, `cached` is authoritative. Read with no subscribers, we
+    // recompute — but return the *same reference* when the value is `Equal`-equal
+    // to the last, so a caller polling `get()` (React's `getSnapshot`) sees an
+    // `Object.is`-stable value and does not spin.
+    get: () => {
+      if (tracking) {
+        return cached;
+      }
+      const next = evaluate().value;
+      if (hasCached && Equal.equals(next, cached)) {
+        return cached;
+      }
+      cached = next;
+      hasCached = true;
+      return cached;
+    },
     subscribe: (listener) => {
       if (listeners.size === 0) {
         const first = evaluate();
         cached = first.value;
+        hasCached = true;
         tracking = true;
         listen(first.deps);
       }
@@ -289,6 +314,72 @@ const deriveWritable = <A>(selector: (read: Read) => A, write: (value: A) => voi
 };
 
 /**
+ * An *async derived* value: it reads atoms and returns an `Effect`, and reads in
+ * a REC with `yield*` like any other atom — but it *suspends* while the effect
+ * runs, re-runs when a source atom changes (keyed by the read values, so an
+ * unchanged source is not refetched), and contributes the same loading obligation
+ * `S` (plus the effect's `E`/`R`) that {@link query} does. Async derivation, still
+ * expressed as data in the Effect world:
+ *
+ * ```ts
+ * const price = derive.effect(($) => fetchPrice($(sku))); // suspends; refetches on sku change
+ * // in a REC: const p = yield* price;  // .suspense(...) must handle the loading
+ * ```
+ *
+ * It owns no interpreter machinery of its own — yielding it drives, in order, a
+ * subscription (so the component re-renders when a source changes) and a keyed
+ * `query` (so it suspends and refetches). Both are ordinary yieldables, so the
+ * `E`/`R`/`S` channels flow exactly as a hand-written `query` would.
+ */
+export interface AsyncDerived<A, E, R> {
+  [Symbol.iterator](): Iterator<Suspensable<A, E, R> | ReadableAtom<ReadonlyArray<unknown>>, A>;
+}
+
+const deriveEffect = <A, E, R>(
+  selector: (read: Read) => Effect.Effect<A, E, R>,
+): AsyncDerived<A, E, R> => {
+  // A stable tracker over exactly the atoms the selector reads: its value is the
+  // snapshot of their current values, so it recomputes (and, yielded, re-renders
+  // its component) only on a real change — and that snapshot is the refetch key.
+  // Building the effect is pure/lazy, so we may run the selector just to track.
+  const key = deriveReadonly<ReadonlyArray<unknown>>((read) => {
+    const values: Array<unknown> = [];
+    selector((atomRead) => {
+      const value = read(atomRead);
+      values.push(value);
+      return value;
+    });
+    return values;
+  });
+  const plainRead: Read = (atomRead) => atomRead.value;
+  return {
+    [Symbol.iterator]() {
+      let step: 0 | 1 | 2 = 0;
+      return {
+        next(
+          sent?: unknown,
+        ): IteratorResult<Suspensable<A, E, R> | ReadableAtom<ReadonlyArray<unknown>>, A> {
+          if (step === 0) {
+            step = 1;
+            return { done: false, value: key }; // subscribe: re-render when a source changes
+          }
+          if (step === 1) {
+            step = 2;
+            // Suspend on the effect, keyed by the snapshot just read back, so it
+            // refetches iff a source value changed.
+            return {
+              done: false,
+              value: query(selector(plainRead), sent as ReadonlyArray<unknown>),
+            };
+          }
+          return { done: true, value: sent as A };
+        },
+      };
+    },
+  };
+};
+
+/**
  * Create a *derived* atom: a read-only reactive value computed from other atoms.
  * `$` tracks exactly the atoms the selector reads, so the derived value
  * recomputes — and its readers re-render — precisely when a tracked atom changes.
@@ -299,6 +390,10 @@ const deriveWritable = <A>(selector: (read: Read) => A, write: (value: A) => voi
  * const total = derive(($) => $(items).reduce((sum, x) => sum + x.price, 0));
  * ```
  *
- * {@link deriveWritable | `derive.writable`} adds a two-way variant.
+ * {@link deriveWritable | `derive.writable`} adds a two-way variant;
+ * {@link deriveEffect | `derive.effect`} an async, suspending one.
  */
-export const derive = Object.assign(deriveReadonly, { writable: deriveWritable });
+export const derive = Object.assign(deriveReadonly, {
+  writable: deriveWritable,
+  effect: deriveEffect,
+});

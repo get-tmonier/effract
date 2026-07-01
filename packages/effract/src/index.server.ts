@@ -61,7 +61,7 @@ export type {
 // service that holds reactive state stays server-safe. The hooks that *read* them
 // in a component are client-only and absent here (like `hook`/`observe`).
 export { atom, derive, atomFamily, batch } from '#infrastructure/reactivity-core.ts';
-export type { Read, AtomFamily } from '#infrastructure/reactivity-core.ts';
+export type { Read, AtomFamily, AsyncDerived } from '#infrastructure/reactivity-core.ts';
 
 // --- components ---
 export { rec, RecTypeId } from '#infrastructure/rec-core.tsx';
