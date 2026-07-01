@@ -55,10 +55,15 @@ const runtimeFor = <ROut, E>(layer: Layer.Layer<ROut, E, never>): ServerRuntime 
  * tree requires — the check lives on the `rec` argument, so there is no cast at
  * the call site. Hook-bearing bodies reject at render (a hook is a client concept
  * RSC forbids); those RECs are client islands and render wherever the browser is.
+ *
+ * Unlike the client `mount`, this imposes no loading obligation: a query resolves
+ * inline before the HTML is sent, so there is no pending state to fall back for.
+ * A tree's `S` is therefore accepted and ignored here — loading is a client
+ * concern, handled where the tree actually renders interactively.
  */
-export function mount<ROut, LE, RE, R>(
+export function mount<ROut, LE, RE, R, S>(
   layer: Layer.Layer<ROut, LE, never>,
-  rec: REC<Record<never, never>, RE, R> &
+  rec: REC<Record<never, never>, RE, R, S> &
     ([Effective<R>] extends [ROut] ? unknown : MissingServices<Exclude<Effective<R>, ROut>>),
 ): () => Promise<ReactNode> {
   const Root = (): Promise<ReactNode> => {

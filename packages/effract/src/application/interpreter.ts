@@ -16,18 +16,24 @@
  */
 import * as Cause from 'effect/Cause';
 import * as Effect from 'effect/Effect';
+import * as Equal from 'effect/Equal';
 import * as Exit from 'effect/Exit';
 import {
   isHook,
   isPlacement,
+  isQuery,
   type AnyEffect,
   type CatchDispatch,
+  type Query,
   type RecGenerator,
 } from '#domain/protocol.ts';
 import type { InterpreterDeps } from '#application/ports.ts';
 
 interface DriveState {
+  /** Encounter counter for suspended async effects (the load-once cache). */
   index: number;
+  /** Encounter counter for queries (the refetch-on-key cache). */
+  queryIndex: number;
 }
 
 /**
@@ -67,13 +73,41 @@ const resolveEffect = (effect: AnyEffect, deps: InterpreterDeps, state: DriveSta
 };
 
 /**
+ * Resolve a yielded query. A slot is kept per encounter order and reused while
+ * its `key` is unchanged; when the key changes we start a fresh run under a new
+ * `AbortController` (leaving the old promise to settle, ignored) — that is the
+ * refetch. The effect is run to a promise bound to the controller's signal, so
+ * the client can interrupt the in-flight fiber on unmount. `use` then suspends
+ * the render until the promise settles: a value returns inline; a failure throws
+ * the tagged error, which `.catch` can render like any other.
+ */
+const resolveQuery = (
+  query: Query<unknown, unknown, unknown>,
+  deps: InterpreterDeps,
+  state: DriveState,
+): unknown => {
+  const index = state.queryIndex++;
+  let slot = deps.queryCache.get(index);
+  if (slot === undefined || !Equal.equals(slot.key, query.key)) {
+    const controller = new AbortController();
+    const promise = deps.executor.runPromise(query.effect, controller.signal);
+    // Keep an unobserved rejection (e.g. an interruption on unmount) from
+    // surfacing as an unhandled rejection; `use` observes the real outcome.
+    void promise.catch(() => {});
+    slot = { key: query.key, promise, controller };
+    deps.queryCache.set(index, slot);
+  }
+  return deps.suspender.use(slot.promise);
+};
+
+/**
  * Run a React Effect Component body to its rendered result. Creates a fresh
  * generator per render (generators are single-use); a Suspense retry simply
  * runs this again from the top, replaying hooks in order and hitting the async
- * cache for already-started work.
+ * and query caches for already-started work.
  */
 export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
-  const state: DriveState = { index: 0 };
+  const state: DriveState = { index: 0, queryIndex: 0 };
   let step = gen.next();
   while (!step.done) {
     const instruction = step.value;
@@ -84,6 +118,9 @@ export const driveRec = <A>(gen: RecGenerator<A>, deps: InterpreterDeps): A => {
     } else if (isPlacement(instruction)) {
       // A child REC: hand it to the renderer to place as a real React child.
       result = deps.placer.place(instruction);
+    } else if (isQuery(instruction)) {
+      // Async data: suspend for it, refetch on key, interrupt on unmount.
+      result = resolveQuery(instruction, deps, state);
     } else {
       result = resolveEffect(instruction, deps, state);
     }

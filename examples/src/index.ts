@@ -10,6 +10,7 @@
  *   06  composing layers
  *   07  render a REC on the server — the same mount, the same import
  *   08  typed errors, rendered — exhaustive `.catch` over the error channel
+ *   09  async data with `query` — loading obligation, refetch, cancellation
  */
 export * as Service from './01-service.tsx';
 export * as HooksAndServices from './02-hooks-and-services.tsx';
@@ -19,3 +20,4 @@ export * as StatefulService from './05-stateful-service.tsx';
 export * as LayerComposition from './06-layer-composition.tsx';
 export * as Server from './07-server.tsx';
 export * as TypedErrors from './08-typed-errors.tsx';
+export * as QueryAndLoading from './09-query-and-loading.tsx';

@@ -15,7 +15,12 @@ import type { AnyEffect, RecPlacement } from '#domain/protocol.ts';
  */
 export interface Executor {
   readonly runSyncExit: (effect: AnyEffect) => Exit.Exit<unknown, unknown>;
-  readonly runPromise: (effect: AnyEffect) => Promise<unknown>;
+  /**
+   * Run an effect to a promise. An optional `AbortSignal` interrupts the fiber
+   * when it fires (closing scopes, running finalizers) — the seam a query uses
+   * to cancel its in-flight request on unmount.
+   */
+  readonly runPromise: (effect: AnyEffect, signal?: AbortSignal) => Promise<unknown>;
 }
 
 /**
@@ -41,6 +46,26 @@ interface AsyncSlot {
 export type RenderCache = Map<number, AsyncSlot>;
 
 /**
+ * One cached query, keyed by encounter order. `key` is the value the query was
+ * last run with (a change re-runs it); `promise` is the stable promise React's
+ * `use` tracks; `controller` interrupts the in-flight fiber when the component
+ * unmounts.
+ */
+interface QuerySlot {
+  readonly key: unknown;
+  readonly promise: Promise<unknown>;
+  readonly controller: AbortController;
+}
+
+/**
+ * Per-component-instance cache of queries, keyed by encounter order and
+ * persisted across renders by a `useRef` in the React adapter. A slot is reused
+ * while its `key` is unchanged and rebuilt (its predecessor left to settle)
+ * when the key changes — this is what gives queries refetch-on-key semantics.
+ */
+export type QueryCache = Map<number, QuerySlot>;
+
+/**
  * Turns a child-REC placement into a rendered node. Injected because *how* a
  * child is placed is renderer-specific — on the client it becomes a real React
  * child fiber (`createElement`); the interpreter itself must stay React-free, so
@@ -50,12 +75,13 @@ export type RenderCache = Map<number, AsyncSlot>;
  * `ReactNode`) without the interpreter — or the renderer — needing a cast.
  */
 export interface Placer {
-  place(placement: RecPlacement<unknown, unknown>): unknown;
+  place(placement: RecPlacement<unknown, unknown, unknown>): unknown;
 }
 
 export interface InterpreterDeps {
   readonly executor: Executor;
   readonly suspender: Suspender;
   readonly cache: RenderCache;
+  readonly queryCache: QueryCache;
   readonly placer: Placer;
 }

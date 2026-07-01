@@ -29,7 +29,7 @@ const RuntimeContext = createContext<RuntimeContextValue | null>(null);
 
 const executorFromRuntime = (runtime: AnyManagedRuntime): Executor => ({
   runSyncExit: (effect) => runtime.runSyncExit(effect),
-  runPromise: (effect) => runtime.runPromise(effect),
+  runPromise: (effect, signal) => runtime.runPromise(effect, signal ? { signal } : undefined),
 });
 
 export interface RuntimeProps<ROut, E> {

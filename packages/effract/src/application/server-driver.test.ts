@@ -10,7 +10,7 @@ import * as Data from 'effect/Data';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
 import * as ManagedRuntime from 'effect/ManagedRuntime';
-import { hook, placement, type CatchDispatch, type RecHandle } from '#domain/protocol.ts';
+import { hook, placement, query, type CatchDispatch, type RecHandle } from '#domain/protocol.ts';
 import { driveServerRec, type RunEffect } from '#application/server-driver.ts';
 
 class Stats extends Context.Service<Stats, { readonly total: number }>()('test/Stats') {}
@@ -59,6 +59,16 @@ describe('driveServerRec', () => {
     };
     const node = await driveServerRec(parent(), runnerFor(Layer.succeed(Stats)({ total: 7 })));
     expect(node).toEqual(['parent', 'child:7']);
+  });
+
+  it('awaits a query inline — no loading state on the server', async () => {
+    const body = function* () {
+      const n = yield* query(Effect.promise(() => Promise.resolve(5)));
+      const m = yield* query(Effect.succeed(2), 'k');
+      return `n:${n}x${m}`;
+    };
+    const result = await driveServerRec(body(), runnerFor(Layer.empty));
+    expect(result).toBe('n:5x2');
   });
 
   it('renders a typed fallback when an effect fails (server .catch)', async () => {

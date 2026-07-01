@@ -51,6 +51,7 @@ const makeDeps = (
   executor: executorWith(layer),
   suspender,
   cache: new Map(),
+  queryCache: new Map(),
   placer: neverPlace,
 });
 
@@ -120,6 +121,7 @@ describe('driveRec', () => {
     const retryDeps: InterpreterDeps = {
       executor: deps.executor,
       cache: deps.cache,
+      queryCache: deps.queryCache,
       suspender: { use: () => 99 as never },
       placer: neverPlace,
     };
@@ -152,6 +154,7 @@ describe('driveRec', () => {
         executor: executorWith(Layer.empty),
         suspender: neverSuspend,
         cache,
+        queryCache: new Map(),
         placer: neverPlace,
       }),
     ).toThrow(TypeError);

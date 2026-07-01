@@ -10,6 +10,7 @@ import * as Context from 'effect/Context';
 import * as Data from 'effect/Data';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
+import { query } from '#domain/protocol.ts';
 import { rec } from '#infrastructure/rec-core.tsx';
 import { mount } from '#infrastructure/server/mount.ts';
 
@@ -52,5 +53,16 @@ describe('server mount', () => {
     }).catch({ NotFound: (e) => `empty:${e.id}` });
     const Root = mount(Layer.empty, Badge);
     expect(await Root()).toBe('empty:1');
+  });
+
+  it('mounts a query-bearing REC with no loading obligation — the server resolves inline', async () => {
+    // On the client this REC carries an undischarged `S`; the server `mount`
+    // accepts it (there is no pending state server-side) and awaits the query.
+    const Badge = rec(function* () {
+      const total = yield* query(Effect.succeed(7));
+      return `total:${total}`;
+    });
+    const Root = mount(Layer.empty, Badge);
+    expect(await Root()).toBe('total:7');
   });
 });

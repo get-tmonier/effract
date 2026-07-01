@@ -21,10 +21,15 @@ export {
   isPlacement,
   placement,
   PlacementTypeId,
+  query,
+  isQuery,
+  QueryTypeId,
 } from '#domain/protocol.ts';
 export type {
   AnyEffect,
   Hook,
+  Query,
+  Suspends,
   Yieldable,
   RecBody,
   RecGenerator,
@@ -32,6 +37,7 @@ export type {
   RecPlacement,
   RequirementsOf,
   ErrorsOf,
+  SuspendsOf,
 } from '#domain/protocol.ts';
 
 // --- components ---
@@ -39,8 +45,15 @@ export type {
 // `'use client'` `react/rec.tsx` — so a server module importing `rec` is not
 // tagged as a client function by an RSC bundler. `mount` here is the client one.
 export { rec, RecTypeId } from '#infrastructure/rec-core.tsx';
-export type { REC, CatchHandlers, MissingServices, Effective } from '#infrastructure/rec-core.tsx';
+export type {
+  REC,
+  CatchHandlers,
+  MissingServices,
+  LoadingNotHandled,
+  Effective,
+} from '#infrastructure/rec-core.tsx';
 export { mount } from '#infrastructure/react/rec.tsx';
+export type { MountOptions } from '#infrastructure/react/rec.tsx';
 
 // --- the runtime boundary (mount is canonical; Runtime is the low-level provider) ---
 export { Runtime, useEffractRuntime } from '#infrastructure/react/runtime.tsx';

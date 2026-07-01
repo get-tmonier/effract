@@ -78,12 +78,96 @@ export const hook = <A>(value: A): Hook<A> => {
 export const isHook = (u: unknown): u is Hook<unknown> =>
   typeof u === 'object' && u !== null && HookTypeId in u;
 
-/** Everything a component body may `yield*`: an Effect, a lifted hook, or a child placement. */
-export type Yieldable<A> = Effect.Effect<A, unknown, unknown> | Hook<A> | RecPlacement<A, unknown>;
+/** Brand identifying an async-data query instruction. */
+export const QueryTypeId = Symbol.for('@tmonier/effract/Query');
+export type QueryTypeId = typeof QueryTypeId;
+
+/**
+ * The fourth kind of yieldable: an *async data query*. Unlike a raw `yield*
+ * effect` — which the interpreter may still suspend on, but silently — a query
+ * is a component's declared asynchronous dependency. Yielding one both suspends
+ * for the value *and* contributes a {@link Suspends} obligation to the REC's
+ * type, so the loading state must be handled somewhere (`.suspense(...)`, or the
+ * `mount` boundary) before the tree compiles. Its `effect` also carries the `E`
+ * and `R` channels, which bubble exactly as a yielded effect's do — so retries,
+ * timeouts and cancellation are just Effect combinators on `effect`, and its
+ * failures are catchable with `.catch`. `key` (compared by value) drives refetch.
+ */
+export interface Query<out A, out E, out R> {
+  readonly [QueryTypeId]: true;
+  readonly effect: Effect.Effect<A, E, R>;
+  readonly key: unknown;
+  [Symbol.iterator](): Iterator<Query<A, E, R>, A>;
+}
+
+/**
+ * Declare an asynchronous data dependency. The interpreter runs `effect`,
+ * suspends the render until it settles (through React's `use`), and re-runs it
+ * when `key` changes by value. On the client the in-flight fiber is interrupted
+ * when the component unmounts; on the server the effect is simply awaited.
+ *
+ * ```ts
+ * const user = yield* query(fetchUser(id), id);                 // refetch on id
+ * const feed = yield* query(load.pipe(Effect.timeout('2s')));   // policies via Effect
+ * ```
+ *
+ * Caching is per component instance and keyed by encounter order, so it holds
+ * once the component has committed. A query that suspends *before its component
+ * first commits* may run again on the Suspense retry (React re-renders an
+ * uncommitted fiber with fresh refs) — a property of Suspense the raw async
+ * yield shares. Make the effect idempotent, or dedupe upstream, if that matters.
+ */
+export const query = <A, E, R>(effect: Effect.Effect<A, E, R>, key?: unknown): Query<A, E, R> => {
+  const self: Query<A, E, R> = {
+    [QueryTypeId]: true,
+    effect,
+    key,
+    [Symbol.iterator]() {
+      let yielded = false;
+      return {
+        next(sent?: unknown): IteratorResult<Query<A, E, R>, A> {
+          if (yielded) {
+            return { done: true, value: sent as A };
+          }
+          yielded = true;
+          return { done: false, value: self };
+        },
+      };
+    },
+  };
+  return self;
+};
+
+/** Type guard: is this yielded instruction an async-data query? */
+export const isQuery = (u: unknown): u is Query<unknown, unknown, unknown> =>
+  typeof u === 'object' && u !== null && QueryTypeId in u;
+
+/**
+ * The phantom marker of an *unhandled loading obligation*. A body that yields a
+ * {@link Query} (or places a child that still carries one) has this in its `S`
+ * channel; `.suspense(fallback)` — or the `mount` boundary — discharges it back
+ * to `never`. It never exists at runtime; it exists only so the type system can
+ * insist a loading state is handled somewhere between component and root. The
+ * branded field is nominal — it makes `Suspends` distinct from `never` and from
+ * any ordinary type, so the discharge checks are exact.
+ */
+export interface Suspends {
+  readonly ['@tmonier/effract/loading']: true;
+}
+
+/** Everything a component body may `yield*`: an Effect, a hook, a child placement, or a query. */
+export type Yieldable<A> =
+  | Effect.Effect<A, unknown, unknown>
+  | Hook<A>
+  | RecPlacement<A, unknown, unknown>
+  | Query<A, unknown, unknown>;
 
 /** The generator a React Effect Component body produces. */
 export type RecGenerator<A> = Generator<
-  AnyEffect | Hook<unknown> | RecPlacement<unknown, unknown>,
+  | AnyEffect
+  | Hook<unknown>
+  | RecPlacement<unknown, unknown, unknown>
+  | Query<unknown, unknown, unknown>,
   A,
   unknown
 >;
@@ -116,6 +200,12 @@ export interface RecHandle<A> {
    * mapped node instead of propagating. Absent for a plain REC.
    */
   readonly catchHandlers?: CatchDispatch<A>;
+  /**
+   * The loading fallback for this REC, if it was `.suspense`-wrapped: the client
+   * places it in a real `<Suspense>` boundary so a yielded {@link Query}'s
+   * pending state renders this node. Renderer-agnostic in `A`; absent otherwise.
+   */
+  readonly suspenseFallback?: A;
 }
 
 /** Brand identifying a child-REC placement instruction. */
@@ -133,7 +223,7 @@ export type PlacementTypeId = typeof PlacementTypeId;
  * the child's Effect requirements flow up through `yield*` to `mount`/`serve`,
  * exactly as a yielded service's requirements do.
  */
-export interface RecPlacement<A, R> {
+export interface RecPlacement<A, R, S = never> {
   readonly [PlacementTypeId]: true;
   readonly rec: RecHandle<A>;
   readonly props: object;
@@ -144,7 +234,14 @@ export interface RecPlacement<A, R> {
    * as `Effect<_, _, Stats>` widens to `AnyEffect`. Never set at runtime.
    */
   readonly _requirements?: R;
-  [Symbol.iterator](): Iterator<RecPlacement<A, R>, A>;
+  /**
+   * Phantom carrier for the child's unhandled loading obligation `S`. Covariant,
+   * like `_requirements`, so a placed child that still suspends bubbles its
+   * {@link Suspends} up to the parent's `S` — until an ancestor `.suspense`s it.
+   * Never set at runtime.
+   */
+  readonly _suspends?: S;
+  [Symbol.iterator](): Iterator<RecPlacement<A, R, S>, A>;
 }
 
 /**
@@ -152,15 +249,18 @@ export interface RecPlacement<A, R> {
  * hands the interpreter the placement instruction, and the value fed back in
  * (the rendered child node) becomes the result of the `yield*`.
  */
-export const placement = <A, R>(rec: RecHandle<A>, props: object): RecPlacement<A, R> => {
-  const self: RecPlacement<A, R> = {
+export const placement = <A, R, S = never>(
+  rec: RecHandle<A>,
+  props: object,
+): RecPlacement<A, R, S> => {
+  const self: RecPlacement<A, R, S> = {
     [PlacementTypeId]: true,
     rec,
     props,
     [Symbol.iterator]() {
       let yielded = false;
       return {
-        next(sent?: unknown): IteratorResult<RecPlacement<A, R>, A> {
+        next(sent?: unknown): IteratorResult<RecPlacement<A, R, S>, A> {
           if (yielded) {
             return { done: true, value: sent as A };
           }
@@ -174,7 +274,7 @@ export const placement = <A, R>(rec: RecHandle<A>, props: object): RecPlacement<
 };
 
 /** Type guard: is this yielded instruction a child-REC placement? */
-export const isPlacement = (u: unknown): u is RecPlacement<unknown, unknown> =>
+export const isPlacement = (u: unknown): u is RecPlacement<unknown, unknown, unknown> =>
   typeof u === 'object' && u !== null && PlacementTypeId in u;
 
 /**
@@ -189,21 +289,43 @@ type EffectsOnly<Eff> = Eff extends AnyEffect ? Eff : never;
  * yielded service's does — one child, its whole subtree's services bubble up.
  */
 type PlacementsAsEffects<Eff> =
-  Eff extends RecPlacement<unknown, infer R> ? Effect.Effect<unknown, unknown, R> : never;
+  Eff extends RecPlacement<unknown, infer R, unknown> ? Effect.Effect<unknown, unknown, R> : never;
+
+/**
+ * Re-express each yielded query as an effect carrying its `E` and `R`, so a
+ * query's errors and requirements join the body's exactly as a raw effect's do.
+ */
+type QueriesAsEffects<Eff> =
+  Eff extends Query<unknown, infer E, infer R> ? Effect.Effect<unknown, E, R> : never;
 
 /**
  * Recover the Effect requirement channel `R` from everything a body yields —
- * services, effects, and placed child RECs. A body that needs both `A` and `B`
- * requires `A & B`, which is exactly the intersection TypeScript infers from
- * the contravariant requirement slot.
+ * services, effects, placed child RECs, and queries. A body that needs both `A`
+ * and `B` requires `A & B`, which is exactly the intersection TypeScript infers
+ * from the contravariant requirement slot.
  */
-export type RequirementsOf<Eff> = [EffectsOnly<Eff> | PlacementsAsEffects<Eff>] extends [
-  Effect.Effect<unknown, unknown, infer R>,
-]
+export type RequirementsOf<Eff> = [
+  EffectsOnly<Eff> | PlacementsAsEffects<Eff> | QueriesAsEffects<Eff>,
+] extends [Effect.Effect<unknown, unknown, infer R>]
   ? R
   : never;
 
-/** Recover the Effect error channel `E` (a union — any yielded effect may fail). */
-export type ErrorsOf<Eff> = [EffectsOnly<Eff>] extends [Effect.Effect<unknown, infer E, unknown>]
+/** Recover the Effect error channel `E` (a union — any yielded effect or query may fail). */
+export type ErrorsOf<Eff> = [EffectsOnly<Eff> | QueriesAsEffects<Eff>] extends [
+  Effect.Effect<unknown, infer E, unknown>,
+]
   ? E
   : never;
+
+/**
+ * Recover the loading obligation `S`. A yielded {@link Query} contributes
+ * {@link Suspends}; a placed child contributes whatever `S` it still carries.
+ * The union is `Suspends` if *anything* below is unhandled, and `never` once it
+ * all is — the exact condition `mount` (and `.suspense`) check.
+ */
+export type SuspendsOf<Eff> =
+  Eff extends Query<unknown, unknown, unknown>
+    ? Suspends
+    : Eff extends RecPlacement<unknown, unknown, infer S>
+      ? S
+      : never;
