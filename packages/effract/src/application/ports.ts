@@ -5,7 +5,7 @@
  * plain fakes.
  */
 import type * as Exit from 'effect/Exit';
-import type { AnyEffect, RecPlacement } from '#domain/protocol.ts';
+import type { AnyEffect, Query, RecPlacement } from '#domain/protocol.ts';
 
 /**
  * Something that can run an Effect. Backed in production by a `ManagedRuntime`
@@ -46,24 +46,17 @@ interface AsyncSlot {
 export type RenderCache = Map<number, AsyncSlot>;
 
 /**
- * One cached query, keyed by encounter order. `key` is the value the query was
- * last run with (a change re-runs it); `promise` is the stable promise React's
- * `use` tracks; `controller` interrupts the in-flight fiber when the component
- * unmounts.
+ * Resolves a yielded {@link Query} to its value, suspending until it settles.
+ * Injected because a query's cache must outlive the component's render attempts:
+ * React re-renders a component that suspends *before it first commits* with fresh
+ * refs, so a per-render cache can't dedupe that. The React adapter backs this
+ * with a store keyed by (component, encounter order, key) that lives outside the
+ * render lifecycle — claimed on commit, released (and the fiber interrupted) on
+ * unmount. `index` is the query's encounter order within the body.
  */
-interface QuerySlot {
-  readonly key: unknown;
-  readonly promise: Promise<unknown>;
-  readonly controller: AbortController;
+export interface QueryResolver {
+  resolve(query: Query<unknown, unknown, unknown>, index: number): unknown;
 }
-
-/**
- * Per-component-instance cache of queries, keyed by encounter order and
- * persisted across renders by a `useRef` in the React adapter. A slot is reused
- * while its `key` is unchanged and rebuilt (its predecessor left to settle)
- * when the key changes — this is what gives queries refetch-on-key semantics.
- */
-export type QueryCache = Map<number, QuerySlot>;
 
 /**
  * Turns a child-REC placement into a rendered node. Injected because *how* a
@@ -82,6 +75,6 @@ export interface InterpreterDeps {
   readonly executor: Executor;
   readonly suspender: Suspender;
   readonly cache: RenderCache;
-  readonly queryCache: QueryCache;
+  readonly queryResolver: QueryResolver;
   readonly placer: Placer;
 }

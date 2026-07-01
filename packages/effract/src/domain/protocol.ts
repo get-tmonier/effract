@@ -111,11 +111,9 @@ export interface Query<out A, out E, out R> {
  * const feed = yield* query(load.pipe(Effect.timeout('2s')));   // policies via Effect
  * ```
  *
- * Caching is per component instance and keyed by encounter order, so it holds
- * once the component has committed. A query that suspends *before its component
- * first commits* may run again on the Suspense retry (React re-renders an
- * uncommitted fiber with fresh refs) — a property of Suspense the raw async
- * yield shares. Make the effect idempotent, or dedupe upstream, if that matters.
+ * The effect runs once per (component, position, key), deduped across every
+ * render attempt — including the pre-commit retries React makes when a component
+ * suspends before it first commits — so a query does not double-fetch on mount.
  */
 export const query = <A, E, R>(effect: Effect.Effect<A, E, R>, key?: unknown): Query<A, E, R> => {
   const self: Query<A, E, R> = {

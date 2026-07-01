@@ -6,7 +6,7 @@
  * pin the runtime behaviour; the block at the bottom pins the obligation tsgo
  * enforces. Typed-error handling rides on the same `E` channel as `.catch`.
  */
-import { act, useState, type ReactNode } from 'react';
+import { StrictMode, act, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as Data from 'effect/Data';
@@ -99,24 +99,21 @@ describe('query — async data + loading obligation', () => {
     await act(async () => root.render(mount(Layer.empty, App)));
     await flush();
     expect(container.querySelector('[data-x="name"]')?.textContent).toBe('user-1');
-    // Everything fetched so far was for id 1 (the count may exceed 1: a component
-    // that suspends before it first commits is re-rendered with fresh refs, so
-    // the positional cache can't dedupe that pre-commit run — a known Suspense
-    // trait the raw async path shares). What matters is the key behaviour below.
-    expect(calls.every((id) => id === 1)).toBe(true);
-    const afterMount = calls.length;
+    // Exactly one run despite suspending before commit — the cross-render store
+    // dedupes every render attempt of the same query.
+    expect(calls).toEqual([1]);
 
-    // Re-render with the same key → the (now committed) slot is reused, no refetch.
+    // Re-render with the same key → the entry is reused, no refetch.
     await click('rerender');
     await flush();
-    expect(calls.length).toBe(afterMount);
+    expect(calls).toEqual([1]);
     expect(container.querySelector('[data-x="name"]')?.textContent).toBe('user-1');
 
     // Change the key → exactly one refetch, for the new id.
     await click('next');
     await flush();
     expect(container.querySelector('[data-x="name"]')?.textContent).toBe('user-2');
-    expect(calls.slice(afterMount)).toEqual([2]);
+    expect(calls).toEqual([1, 2]);
 
     await act(async () => root.unmount());
   });
@@ -161,6 +158,34 @@ describe('query — async data + loading obligation', () => {
       await new Promise((r) => setTimeout(r, 40));
     });
     expect(interrupted).toBe(true);
+  });
+
+  it('runs once and survives under StrictMode (no double-fetch on remount)', async () => {
+    let runs = 0;
+    let resolve: (u: User) => void = () => {};
+    const gate = new Promise<User>((r) => {
+      resolve = r;
+    });
+    const Profile = rec(function* () {
+      const user = yield* query(
+        Effect.promise(() => {
+          runs++;
+          return gate;
+        }),
+      );
+      return <span>hi {user.name}</span>;
+    }).suspense(<i>loading</i>);
+
+    const root = createRoot(container);
+    await act(async () => root.render(<StrictMode>{mount(Layer.empty, Profile)}</StrictMode>));
+    await act(async () => {
+      resolve({ name: 'Ada' });
+      await gate;
+    });
+    await flush();
+    expect(container.textContent).toContain('hi Ada');
+    expect(runs).toBe(1);
+    await act(async () => root.unmount());
   });
 
   it('discharges the loading obligation at the mount boundary with { loading }', async () => {
@@ -218,4 +243,14 @@ describe('query — async data + loading obligation', () => {
   });
   const _node: ReactNode = mount(Layer.empty, Plain);
   void _node;
+
+  // Opt-in: a *raw async* effect still suspends at runtime, but carries no loading
+  // obligation — `query` is what opts a REC into type-tracked loading. So this
+  // mounts without `.suspense` (you bring your own <Suspense>, as in recipe 03).
+  const RawAsync = rec(function* () {
+    const v = yield* Effect.promise(() => Promise.resolve(1));
+    return <i>{v}</i>;
+  });
+  const _raw: ReactNode = mount(Layer.empty, RawAsync);
+  void _raw;
 }

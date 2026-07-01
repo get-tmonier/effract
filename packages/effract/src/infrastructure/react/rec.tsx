@@ -33,8 +33,15 @@ import {
 } from 'react';
 import type * as Layer from 'effect/Layer';
 import { driveRecCaught } from '#application/interpreter.ts';
-import type { Placer, QueryCache, RenderCache, Suspender } from '#application/ports.ts';
+import type { Placer, RenderCache, Suspender } from '#application/ports.ts';
 import type { RecHandle, RecPlacement } from '#domain/protocol.ts';
+import {
+  makeQueryResolver,
+  nextInstanceId,
+  reconcileClaims,
+  releaseClaims,
+  scopeOf,
+} from '#infrastructure/react/query-store.ts';
 import type {
   Effective,
   LoadingNotHandled,
@@ -53,22 +60,31 @@ const useRenderCache = (): RenderCache => {
   return ref.current;
 };
 
-const useQueryCache = (): QueryCache => {
-  const ref = useRef<QueryCache | null>(null);
+const useInstanceId = (): string => {
+  const ref = useRef<string | null>(null);
   if (ref.current === null) {
-    ref.current = new Map();
+    ref.current = nextInstanceId();
   }
   return ref.current;
 };
 
 /**
- * Interrupt this component's in-flight queries when it *truly* unmounts. Like
- * the runtime boundary, we survive StrictMode/offscreen remount by deferring the
- * abort to a microtask and cancelling it if the effect is set up again first —
- * so a real unmount cancels the query fibers (running their finalizers), while a
- * strict remount leaves them running.
+ * Keep this instance's query claims in sync with the store. Two effects,
+ * unconditional so hook order is stable whether or not the body suspends:
+ *
+ *   - reconcile on every commit — claim the keys this render used, release ones
+ *     it stopped using (how refetch-on-key drops the superseded query);
+ *   - release everything on a *true* unmount — deferred a microtask and cancelled
+ *     if the effect is set up again first, so a StrictMode/offscreen remount does
+ *     not interrupt live queries.
+ *
+ * `usedRef` holds the cache keys of the last *committed* render; a suspending
+ * render never reaches the assignment, and its effects never run.
  */
-const useQueryInterruption = (queryCache: QueryCache): void => {
+const useQueryClaims = (instanceId: string, usedRef: { current: ReadonlySet<string> }): void => {
+  useEffect(() => {
+    reconcileClaims(instanceId, usedRef.current);
+  });
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -76,14 +92,11 @@ const useQueryInterruption = (queryCache: QueryCache): void => {
       alive.current = false;
       queueMicrotask(() => {
         if (!alive.current) {
-          for (const slot of queryCache.values()) {
-            slot.controller.abort();
-          }
-          queryCache.clear();
+          releaseClaims(instanceId);
         }
       });
     };
-  }, [queryCache]);
+  }, [instanceId]);
 };
 
 /**
@@ -99,22 +112,33 @@ const clientFcFor = (handle: RecHandle<ReactNode>): FunctionComponent<object> =>
   if (cached !== undefined) {
     return cached;
   }
+  const scope = scopeOf(handle);
   const fc: FunctionComponent<object> = (props) => {
     const executor = useExecutor();
     const suspender = useSuspender();
     const cache = useRenderCache();
-    const queryCache = useQueryCache();
-    useQueryInterruption(queryCache);
-    return driveRecCaught(
+    const instanceId = useInstanceId();
+    const usedRef = useRef<ReadonlySet<string>>(EMPTY_USED);
+    useQueryClaims(instanceId, usedRef);
+
+    const used = new Set<string>();
+    const resolver = makeQueryResolver(scope, executor, suspender, used);
+    const node = driveRecCaught(
       handle.body(props),
-      { executor, suspender, cache, queryCache, placer: clientPlacer },
+      { executor, suspender, cache, queryResolver: resolver, placer: clientPlacer },
       handle.catchHandlers,
     );
+    // Reached only when the body did not suspend, i.e. this render will commit —
+    // so the claim effects always reconcile against a real, complete used set.
+    usedRef.current = used;
+    return node;
   };
   Object.defineProperty(fc, 'name', { value: handle.displayName });
   fcCache.set(handle, fc);
   return fc;
 };
+
+const EMPTY_USED: ReadonlySet<string> = new Set();
 
 /**
  * Places a child REC as a real React child element under the same runtime. The
