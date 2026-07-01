@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-07-02
+
+### Fixed
+
+- **`.catch` is now order-independent.** A `query` / `suspend` (or any catchable async yield) that fails
+  no longer has to be the last hook-bearing yield in the body. Previously a failure that skipped hooks
+  _after_ it tripped React's "rendered fewer hooks than expected" on a re-render and tore the subtree
+  down (a `.catch`ed component whose fetch failed on refetch could take its siblings with it). `.catch`
+  now applies as a React error boundary — with an inline fast-path that keeps server rendering and the
+  common cases working — and recovers on its own when an atom the body read changes, so navigating to an
+  input that no longer fails brings the component back. Reads and hooks may sit in any order around a
+  catchable yield.
+
 ## [0.5.0] — 2026-07-01
 
 **The atom toolkit — reactive state as data in the Effect world.** State, and the logic over it, live in
