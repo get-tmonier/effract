@@ -5,7 +5,7 @@ group: Advanced
 order: 2
 ---
 
-The repository ships seven self-contained, typechecked **recipes** — one call-site pattern per file —
+The repository ships nine self-contained, typechecked **recipes** — one call-site pattern per file —
 and four **example apps** that render the same shared components across environments. The whole public
 API is three primitives — **`rec`**, **`hook`**, **`mount`** — and recipes 01–02 already use all three.
 
@@ -22,6 +22,8 @@ Browse them in [`examples/`](https://github.com/get-tmonier/effract/tree/main/ex
 | 05 | stateful-service | a REC wired to mutable service state |
 | 06 | layer-composition | services that depend on services |
 | 07 | server | render a REC on the server — the same `mount`, the same import |
+| 08 | typed-errors | exhaustive `.catch` over the error channel |
+| 09 | query-and-loading | `query` — loading obligation, refetch, cancellation |
 
 ## Example apps
 

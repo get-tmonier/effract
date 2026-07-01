@@ -77,5 +77,9 @@ const Account = rec(function* () {
 });
 ```
 
+That raw form is the escape hatch: it suspends, but nothing tracks it. For real async data, wrap the
+effect in [`query`](/docs/loading/) — it dedupes, refetches on key, cancels on unmount, and records a
+loading obligation the type system makes you handle. See [Loading & queries](/docs/loading/).
+
 A REC's typed failures can be rendered as UI with [`.catch`](/docs/errors/) — one fallback per error
 `_tag`, checked exhaustively. Anything you don't handle is thrown to the nearest React error boundary.

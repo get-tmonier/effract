@@ -39,7 +39,7 @@ const en: SiteContent = {
     rows: [
       { write: 'yield* Stats', does: 'a service, resolved synchronously' },
       { write: 'yield* hook(useState(0))', does: 'a real React hook, stable order' },
-      { write: 'yield* fetchUser', does: 'suspends, then resumes inline' },
+      { write: 'yield* query(data, id)', does: 'suspends; loading tracked in the type' },
       { write: 'a typed failure', does: 'renders a .catch fallback' },
     ],
   },
@@ -60,6 +60,12 @@ const en: SiteContent = {
     title: 'Every failure has a face',
     body: 'A REC’s failures ride in its type. [[.catch turns them into UI]] — one fallback per error tag, checked exhaustively. No try/catch, no error instanceof, no untyped boundary. Sync or async, on the client or the server.',
     caption: 'Forget a case and it [[won’t compile]] — the error channel keeps you honest.',
+  },
+  loading: {
+    label: 'Loading, handled',
+    title: 'A loading state you can’t forget',
+    body: 'Async data goes through [[query]] — it suspends for the value, refetches on key, and cancels its fiber on unmount. And, like .catch for errors, it puts a loading obligation in the type: mount [[won’t compile]] until you handle it, with .suspense(fallback) or { loading }. Retries and timeouts are just Effect combinators.',
+    caption: 'The obligation bubbles to the root — one boundary discharges the subtree.',
   },
   philosophy: {
     label: 'Philosophy',
@@ -120,7 +126,7 @@ const en: SiteContent = {
   },
   cta: {
     title: 'Write it once. Run it anywhere a runtime does.',
-    body: 'MIT, on npm. Start with the docs, or the eight call-site recipes.',
+    body: 'MIT, on npm. Start with the docs, or the nine call-site recipes.',
     primary: 'Get started',
     secondary: 'View on GitHub',
   },

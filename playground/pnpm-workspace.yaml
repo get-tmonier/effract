@@ -1,0 +1,5 @@
+# Standalone. This file scopes pnpm to *this* folder so it never walks up to the
+# monorepo's catalog workspace (whose `catalog:` protocol StackBlitz can't
+# resolve). The playground installs its own pinned npm versions — no catalog, no
+# workspace links — so it runs anywhere, including StackBlitz's WebContainer.
+packages: []
