@@ -6,7 +6,17 @@ import { act, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as Layer from 'effect/Layer';
-import { Observe, atom, derive, mount, observe, rec, useAtom } from '../../index.client.ts';
+import {
+  Observe,
+  atom,
+  atomFamily,
+  batch,
+  derive,
+  mount,
+  observe,
+  rec,
+  useAtom,
+} from '../../index.client.ts';
 
 Reflect.set(globalThis, 'IS_REACT_ACT_ENVIRONMENT', true);
 
@@ -149,5 +159,105 @@ describe('reactivity', () => {
     expect(doubled.value).toBe(6);
     n.set(5);
     expect(doubled.value).toBe(10);
+  });
+
+  it('an unchanged write (by Equal) notifies no one', () => {
+    const n = atom(1);
+    let notifications = 0;
+    const unsub = n.subscribe(() => {
+      notifications += 1;
+    });
+    n.set(1); // same value — no-op
+    expect(notifications).toBe(0);
+    n.set(2);
+    expect(notifications).toBe(1);
+    unsub();
+  });
+
+  it('batch coalesces writes into a single notification wave', () => {
+    const a = atom(1);
+    const b = atom(2);
+    const sum = derive(($) => $(a) + $(b));
+    let notifications = 0;
+    const unsub = sum.subscribe(() => {
+      notifications += 1;
+    });
+
+    // Without a batch: two writes → two recomputations, two notifications.
+    a.set(10);
+    b.set(20);
+    expect(notifications).toBe(2);
+    expect(sum.value).toBe(30);
+
+    // With a batch: two writes → one recomputation, one notification.
+    notifications = 0;
+    batch(() => {
+      a.set(100);
+      b.set(200);
+    });
+    expect(notifications).toBe(1);
+    expect(sum.value).toBe(300);
+
+    unsub();
+  });
+
+  it('atomFamily memoises one independent atom per key', () => {
+    const quantities = atomFamily((_id: string) => atom(1));
+    const first = quantities('sku-1');
+    expect(quantities('sku-1')).toBe(first); // same key → same atom
+    expect(quantities('sku-2')).not.toBe(first); // different key → its own atom
+
+    first.update((n) => n + 4);
+    expect(quantities('sku-1').value).toBe(5);
+    expect(quantities('sku-2').value).toBe(1); // independent
+
+    quantities.forget('sku-1');
+    expect(quantities('sku-1')).not.toBe(first); // forgotten → a fresh atom
+    expect(quantities('sku-1').value).toBe(1);
+  });
+
+  it('derive.writable reads a derived value and writes back to its sources', () => {
+    const celsius = atom(0);
+    const fahrenheit = derive.writable(
+      ($) => $(celsius) * 1.8 + 32,
+      (f) => celsius.set((f - 32) / 1.8),
+    );
+
+    expect(fahrenheit.value).toBe(32);
+    celsius.set(100);
+    expect(fahrenheit.value).toBe(212);
+
+    fahrenheit.set(32); // write flows back to the source
+    expect(celsius.value).toBe(0);
+    fahrenheit.update((f) => f + 18); // 32 → 50 → celsius 10
+    expect(celsius.value).toBe(10);
+  });
+
+  it('derive.writable is a reactive atom a component can yield and drive', async () => {
+    const celsius = atom(0);
+    const fahrenheit = derive.writable(
+      ($) => $(celsius) * 1.8 + 32,
+      (f) => celsius.set((f - 32) / 1.8),
+    );
+    const Thermostat = rec(function* () {
+      const f = yield* fahrenheit;
+      return (
+        <button type="button" onClick={() => fahrenheit.set(f + 18)}>
+          {f}
+        </button>
+      );
+    });
+
+    const root = createRoot(container);
+    await act(async () => root.render(mount(Layer.empty, Thermostat)));
+    expect(container.textContent).toBe('32');
+
+    await act(async () => {
+      container.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(container.textContent).toBe('50'); // +18°F → celsius 10 → 50°F
+    expect(celsius.value).toBe(10);
+
+    await act(async () => root.unmount());
   });
 });

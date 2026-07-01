@@ -65,10 +65,11 @@ export { Runtime, useEffractRuntime } from '#infrastructure/react/runtime.tsx';
 export type { RuntimeProps } from '#infrastructure/react/runtime.tsx';
 
 // --- reactivity ---
-// `atom` / `derive` are server-safe (a service can hold one); the hooks that read
-// them in a component are client-only, like `hook` itself.
-export { atom, derive } from '#infrastructure/reactivity-core.ts';
-export type { Read } from '#infrastructure/reactivity-core.ts';
+// `atom` / `derive` / `atomFamily` / `batch` are server-safe (a service can hold
+// and drive them); the hooks that read them in a component are client-only, like
+// `hook` itself.
+export { atom, derive, atomFamily, batch } from '#infrastructure/reactivity-core.ts';
+export type { Read, AtomFamily } from '#infrastructure/reactivity-core.ts';
 export {
   observe,
   Observe,
