@@ -20,7 +20,7 @@ and answers each `yield*` based on what it is:
 | `yield* SomeService` | resolves it synchronously from the runtime's `Context` |
 | `yield* hook(useState(0))` | the hook already ran inline — keeps its place in React's hook order |
 | `yield* someAsyncEffect` | suspends through React's `use`, resumes inline on the retry |
-| a genuine failure | throws to the nearest React error boundary |
+| a typed failure | renders a [`.catch`](/docs/errors/) fallback for its `_tag` — else throws to the nearest boundary |
 
 Because the walk is synchronous and deterministic, your hooks stay valid React hooks with a stable
 order across renders. effract cooperates with React's reconciler; it never replaces it.

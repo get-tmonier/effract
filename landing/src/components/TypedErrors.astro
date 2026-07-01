@@ -1,0 +1,43 @@
+---
+import CodeWindow from '#components/CodeWindow.astro';
+import { emphasize } from '#lib/text';
+import type { SiteContent } from '#i18n/types';
+
+interface Props {
+  content: SiteContent;
+}
+const { typedErrors } = Astro.props.content;
+
+const code = `// A REC's errors are part of its type
+const Profile = rec(function* () {
+  const user = yield* fetchUser(id)
+  //   E = NotFound | Unauthorized
+  return <Card user={user}/>
+}).catch({
+  NotFound:     () => <Empty/>,
+  Unauthorized: () => <Login/>,
+})
+// miss a case → it won't compile`;
+---
+
+<section id="typed-errors" class="relative mx-auto max-w-6xl px-5 py-14 sm:py-20 lg:py-24">
+  <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16">
+    {/* Code first on desktop; prose reflows above it on mobile via `order`. */}
+    <div class="reveal order-2 lg:order-1" style="--reveal-delay: 120ms">
+      <CodeWindow code={code} title="profile.tsx" />
+      <p
+        class="mt-4 text-center text-sm text-muted text-pretty"
+        set:html={emphasize(typedErrors.caption)}
+      />
+    </div>
+
+    <div class="reveal order-1 lg:order-2">
+      <p class="mb-3 font-mono text-xs tracking-widest text-teal uppercase">{typedErrors.label}</p>
+      <h2 class="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{typedErrors.title}</h2>
+      <p
+        class="mt-5 leading-relaxed text-ink-dim text-pretty"
+        set:html={emphasize(typedErrors.body)}
+      />
+    </div>
+  </div>
+</section>

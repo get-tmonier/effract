@@ -77,4 +77,5 @@ const Account = rec(function* () {
 });
 ```
 
-Errors in the Effect channel are thrown to the nearest React error boundary.
+A REC's typed failures can be rendered as UI with [`.catch`](/docs/errors/) — one fallback per error
+`_tag`, checked exhaustively. Anything you don't handle is thrown to the nearest React error boundary.
