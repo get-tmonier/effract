@@ -4,7 +4,7 @@ const fr: SiteContent = {
   meta: {
     title: 'effract — écrivez vos composants React comme des programmes Effect',
     description:
-      'Écrivez vos composants React comme des programmes Effect. Un composant tourne en SPA, sur un serveur, dans un Web Worker ou comme RSC — serveur ou client n’est qu’un détail de runtime.',
+      'Écrivez vos composants React comme des programmes Effect. Un composant, un seul mount, en SPA, en SSR ou comme React Server Component — serveur ou client n’est qu’un détail de runtime.',
   },
   nav: {
     thesis: 'Thèse',
@@ -17,7 +17,7 @@ const fr: SiteContent = {
     titleLead: 'Vos composants React, écrits comme des',
     titleGradient: 'programmes Effect.',
     subtitle:
-      'Le même composant tourne en SPA, sur un serveur, dans un Web Worker ou comme RSC — serveur ou client n’est qu’un [[détail de runtime]].',
+      'Le même composant, le même mount, en SPA, en SSR ou comme React Server Component — serveur ou client n’est qu’un [[détail de runtime]].',
     ctaPrimary: 'Lire la doc',
     ctaSecondary: 'Star sur GitHub',
     installNote: 'MIT · React 19+ · Effect v4 · ~5 Ko',
@@ -44,14 +44,14 @@ const fr: SiteContent = {
     ],
   },
   everywhere: {
-    label: 'Un composant, tous les runtimes',
-    title: 'Serveur ou client : un simple mount(...)',
-    body: 'Layer navigateur → SPA. Layer serveur → SSR en flux. Moteur Flight → RSC. Le composant [[ne change jamais]] ; seul le runtime sous lui change.',
+    label: 'Un composant, un seul mount, tous les runtimes',
+    title: 'Vous ne tapez jamais « serveur » ou « client »',
+    body: 'Le même mount(layer, Root), depuis le même package, dans chaque fichier. Dans un graphe RSC, le bundler lui donne une implémentation serveur — aucun JS client ; ailleurs il s’affiche de façon interactive. Le composant [[ne change jamais]] ; seul l’endroit où vous le mount change.',
     runtimes: [
       { name: 'SPA', desc: 'Vite, dans le navigateur' },
       { name: 'SSR', desc: 'Bun / Node en flux' },
-      { name: 'Web Worker', desc: 'hors du thread principal' },
-      { name: 'RSC', desc: 'Flight, en flux' },
+      { name: 'Start', desc: 'TanStack Start' },
+      { name: 'RSC', desc: 'Next.js, sans JS client' },
     ],
     caption: 'Les mêmes RECs dans les quatre — démontré par les apps d’exemple.',
   },
@@ -100,7 +100,7 @@ const fr: SiteContent = {
       },
       {
         title: 'RSC, nativement',
-        desc: 'Le même corps devient un [[Server Component async]] et émet du Flight standard.',
+        desc: 'La même valeur devient un [[Server Component async]] avec le même mount — un seul package, aucune forme serveur distincte, aucun JS client.',
       },
       {
         title: 'Léger, et jamais en double',
@@ -114,7 +114,7 @@ const fr: SiteContent = {
   },
   cta: {
     title: 'Écrivez-le une fois. Exécutez-le partout où tourne un runtime.',
-    body: 'MIT, sur npm. Commencez par la doc, ou les huit recettes de call site.',
+    body: 'MIT, sur npm. Commencez par la doc, ou les sept recettes de call site.',
     primary: 'Commencer',
     secondary: 'Voir sur GitHub',
   },

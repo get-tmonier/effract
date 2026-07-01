@@ -33,15 +33,27 @@
   },
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "react-server": {
+        "types": "./src/index.server.ts",
+        "default": "./src/index.server.ts"
+      },
+      "default": {
+        "types": "./src/index.client.ts",
+        "default": "./src/index.client.ts"
+      }
     }
   },
   "publishConfig": {
     "exports": {
       ".": {
-        "types": "./dist/index.d.mts",
-        "import": "./dist/index.mjs"
+        "react-server": {
+          "types": "./dist/index.server.d.mts",
+          "import": "./dist/index.server.mjs"
+        },
+        "default": {
+          "types": "./dist/index.client.d.mts",
+          "import": "./dist/index.client.mjs"
+        }
       }
     },
     "access": "public"

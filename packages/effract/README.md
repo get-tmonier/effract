@@ -1,7 +1,8 @@
 # @tmonier/effract
 
-Write React components as Effect programs. The same component runs in a SPA, on a Bun/Node server, in a Web
-Worker, or as a React Server Component.
+Write React components as Effect programs. The same component — and the same `mount` — runs in a SPA,
+during SSR, or as a React Server Component. One package, one import; the client/server split is chosen
+by the bundler, never by you.
 
 **Docs & guide → [effract.tmonier.com](https://effract.tmonier.com)**
 
@@ -26,12 +27,14 @@ effract is **incremental, not a rewrite.** Plain React components stay exactly a
 `<Component />` JSX). You write a REC with `rec(...)` _only_ where a component reaches for the runtime,
 and place one by `yield*`-ing it: `{yield* Dashboard}`, or `{yield* Dashboard.with({ ... })}` with props.
 
-- `component` / `view` — hook-capable and resolve-up-front RECs. A REC is **not** a JSX element; place it
+- `rec` / `view` — hook-capable and resolve-up-front RECs. A REC is **not** a JSX element; place it
   with `{yield* Rec}` inside another component's JSX.
 - `hook` — lift a React hook into the `yield*` channel.
-- `mount(layer, RootRec)` — build the Effect runtime once and return a `ReactNode` to render. Verifies at
-  compile time that the layer provides every service the tree needs.
-- `atom`, `observe`, `<Observe>`, `useAtom` — the signals bridge.
+- `mount(layer, RootRec)` — the one boundary, client **and** server. Builds the Effect runtime once and
+  verifies at compile time that the layer provides every service the tree needs. In a React Server
+  Component graph the bundler's `react-server` condition gives it a server implementation (renders on the
+  server, no client JS); everywhere else it renders interactively. Same import in every file.
+- `atom`, `observe`, `<Observe>`, `useAtom` — the signals bridge (client).
 
 See the [project README](https://github.com/get-tmonier/effract#readme) and
 [ADR 0001](https://github.com/get-tmonier/effract/blob/main/docs/adr/0001-fiber-reconciliation.md).

@@ -1,20 +1,20 @@
 ---
 title: Components
-description: component, view, and hook — the two ways to write a component as an Effect program.
+description: rec and hook — write a component as an Effect program, and place it with yield*.
 group: Core
 order: 2
 ---
 
-effract gives you two component constructors. Both produce a **REC** (React Effect Component). You
+effract has **one** component constructor: `rec`. It produces a **REC** (React Effect Component). You
 write a REC _only_ for a component that reaches for the runtime — a service, or a hook bridged through
 Effect. **Plain React components stay plain**: ordinary functions used as `<Panel />` JSX, untouched.
 The two compose freely in the same tree.
 
-## `component` — the hook-capable REC
+## `rec` — write a component as an Effect program
 
-The headline. The body yields Effect services and effects, and `yield* hook(...)` for React hooks,
-all interpreted inside the render pass. Note that `Panel` below is a plain React component placed as
-ordinary JSX — effract never asks you to rewrite it.
+The body yields Effect services and effects, and `yield* hook(...)` for React hooks, all interpreted
+inside the render pass. Note that `Panel` below is a plain React component placed as ordinary JSX —
+effract never asks you to rewrite it.
 
 ```tsx
 const Dashboard = rec(function* () {
@@ -46,18 +46,17 @@ const Page = rec(function* () {
 Plain components stay normal JSX, so a REC and a plain component sit side by side:
 `<Card>{yield* Counter}</Card>`.
 
-## `view` — resolve up front
+## Resolve up front (no hooks)
 
-When a component is pure data → markup (no hooks), `view` runs it as a single Effect. It's the
-simpler, RSC-friendly mode — ideal near the root for flags, the current user, or permissions.
+A REC whose body only reads services — no `hook(...)` — is the simpler, RSC-friendly shape: ideal near
+the root for flags, the current user, or permissions. It's the same `rec`, and because it never touches
+a hook it renders on the server with the same [`mount`](/docs/client-and-server/).
 
 ```tsx
-const Banner = view(
-  Effect.gen(function* () {
-    const flags = yield* Flags;
-    return flags.beta ? <aside>You're on the beta.</aside> : null;
-  }),
-);
+const Banner = rec(function* () {
+  const flags = yield* Flags;
+  return flags.beta ? <aside>You're on the beta.</aside> : null;
+});
 ```
 
 ## Async and Suspense

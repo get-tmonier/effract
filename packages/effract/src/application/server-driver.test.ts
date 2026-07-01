@@ -1,15 +1,15 @@
 /**
  * The server driver, exercised without React. It proves the RSC half of the
  * thesis: the same REC body the client interprets resolves on the server by
- * awaiting its yields against an Effect runtime — and that hooks, which RSC
- * forbids, are rejected with a clear error.
+ * awaiting its yields against an Effect runtime, drives placed children inline,
+ * and rejects hooks (which RSC forbids) with a clear error.
  */
 import { describe, expect, it } from 'vitest';
 import * as Context from 'effect/Context';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
 import * as ManagedRuntime from 'effect/ManagedRuntime';
-import { hook } from '@tmonier/effract';
+import { hook, placement, type RecHandle } from '#domain/protocol.ts';
 import { driveServerRec, type RunEffect } from '#application/server-driver.ts';
 
 class Stats extends Context.Service<Stats, { readonly total: number }>()('test/Stats') {}
@@ -41,5 +41,21 @@ describe('driveServerRec', () => {
     await expect(driveServerRec(body(), runnerFor(Layer.empty))).rejects.toThrow(
       /hooks are not available/,
     );
+  });
+
+  it('drives a placed child REC inline — universal composition, no client JS', async () => {
+    // A child body and a placement of it, built from the pure protocol (no
+    // renderer) — the interpreter drives the placed child on the server too.
+    const childBody = function* () {
+      const stats = yield* Stats;
+      return `child:${stats.total}`;
+    };
+    const child: RecHandle<string> = { body: childBody, displayName: 'Child' };
+    const parent = function* () {
+      const rendered = yield* placement(child, {});
+      return ['parent', rendered];
+    };
+    const node = await driveServerRec(parent(), runnerFor(Layer.succeed(Stats)({ total: 7 })));
+    expect(node).toEqual(['parent', 'child:7']);
   });
 });

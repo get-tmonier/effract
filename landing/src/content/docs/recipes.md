@@ -5,8 +5,9 @@ group: Advanced
 order: 2
 ---
 
-The repository ships eight self-contained, typechecked **recipes** — one call-site pattern per file —
-and four **example apps** that render the same shared components across environments.
+The repository ships seven self-contained, typechecked **recipes** — one call-site pattern per file —
+and four **example apps** that render the same shared components across environments. The whole public
+API is three primitives — **`rec`**, **`hook`**, **`mount`** — and recipes 01–02 already use all three.
 
 ## Recipes
 
@@ -14,14 +15,13 @@ Browse them in [`examples/`](https://github.com/get-tmonier/effract/tree/main/ex
 
 | | Recipe | Shows |
 | --- | --- | --- |
-| 01 | service | read a service with `yield*` |
-| 02 | hooks-and-services | `useState` and a service, interleaved |
+| 01 | service | read a service with `yield*` — `rec` + `mount` |
+| 02 | hooks-and-services | `useState` and a service, interleaved — adds `hook` |
 | 03 | async-and-suspense | async effect → Suspense |
 | 04 | signals | `atom` / `observe` / `useAtom` |
 | 05 | stateful-service | a REC wired to mutable service state |
 | 06 | layer-composition | services that depend on services |
-| 07 | resolve-up-front | `view` (the RSC-friendly mode) |
-| 08 | server-component | drive a REC as RSC + stream Flight |
+| 07 | server | render a REC on the server — the same `mount`, the same import |
 
 ## Example apps
 

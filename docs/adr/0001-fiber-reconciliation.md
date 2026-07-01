@@ -8,8 +8,8 @@
 
 React and Effect are both fiber schedulers. React renders a tree by walking fibers; Effect runs a program
 by interpreting a fiber. effract's premise is that a single component body can be written as an Effect
-program and rendered by React — that "where it runs" (SPA, SSR, Web Worker, RSC) is a property of the
-Effect runtime, not of the component.
+program and rendered by React — that "where it runs" (SPA, SSR, RSC) is a property of the Effect
+runtime, not of the component.
 
 The hard requirement is **stay 100% real React**. We must not fork the reconciler, ship a custom renderer,
 or break the Rules of Hooks. A React Effect Component (REC) has to be an ordinary React component that
@@ -40,14 +40,14 @@ instruction:
 
 The interpreter lives in the `application` layer and is **React-free**: it takes React's `use` and the
 Effect executor through ports, so the entire fiber bridge is unit-tested with plain fakes and no renderer.
-The `infrastructure` layer is the thin React adapter (`component`, `view`, `<Runtime>`, the signals
-bridge).
+The `infrastructure` layer is the thin React adapter (`rec`, `<Runtime>`, the client/server `mount`,
+the signals bridge).
 
 Two boundary modes are supported:
 
-- **Hook-capable RECs** (`component`) — the headline: the in-render interpreter above.
-- **Resolve-up-front** (`view`, and `serverComponent` in `@tmonier/effract-rsc`) — a body that is a pure
-  Effect with no hooks, resolved once. On the server it is simply an `async` component that awaits its
+- **Hook-capable RECs** (`rec`) — the headline: the in-render interpreter above.
+- **Resolve-up-front** (any hook-free `rec`, e.g. driven by the server `mount`) — a body that reads only
+  services, no hooks, resolved once. On the server it is simply an `async` component that awaits its
   yields; this is the RSC-friendly path.
 
 The yield protocol is the same one Effect's own `Effect.gen` uses (single-shot iterables), so `yield* Tag`
@@ -59,8 +59,9 @@ and `yield* hook(x)` both work and `E`/`R` are recovered by the same conditional
 
 - **It is real React.** Hooks keep their order; Suspense, error boundaries, memoization, hydration, and
   concurrent features all work, because effract renders through React rather than around it.
-- **One component, every runtime.** The same body renders in a SPA, in streaming SSR, in a Web Worker, and
-  (resolve-up-front) as an RSC. "Server vs client" is a `<Runtime>` choice.
+- **One component, one `mount`, every runtime.** The same body renders in a SPA, in streaming SSR, and
+  (resolve-up-front) as an RSC — via the same `mount(layer, Root)`, whose client/server implementation the
+  bundler's `react-server` condition selects. "Server vs client" is never something you type.
 - **Services are synchronous at the call site.** Resolution is a `Context` lookup, so `yield* Stats` has no
   async cost and no `Effect.runSync` footgun leaks to users.
 - **Testable core.** The interpreter is pure and renderer-agnostic; the bridge is verified without a DOM.
@@ -86,6 +87,6 @@ and `yield* hook(x)` both work and `E`/`R` are recovered by the same conditional
   the Rules of Hooks.
 - **A custom React reconciler / renderer.** Rejected: it would no longer be "real React" and would forfeit
   Suspense, RSC, hydration, and the ecosystem.
-- **Resolve everything up front, no in-render hooks.** Kept as the *secondary* mode (`view` /
-  `serverComponent`) because it is perfect for RSC, but it cannot express stateful client components — which
-  is the headline. So it complements, rather than replaces, the interpreter.
+- **Resolve everything up front, no in-render hooks.** Kept as the *secondary* mode (any hook-free `rec`,
+  e.g. on the server `mount`) because it is perfect for RSC, but it cannot express stateful client
+  components — which is the headline. So it complements, rather than replaces, the interpreter.

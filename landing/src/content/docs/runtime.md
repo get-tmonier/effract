@@ -21,6 +21,11 @@ needs — a missing service is a type error that names the service. Services the
 the runtime's context, so reading one inside a component is a synchronous lookup — not an async
 round-trip.
 
+On the server it's the **same call from the same package**: `mount(layer, Root)`. In a React Server
+Component graph the bundler hands `mount` a server implementation (it renders on the server, no client
+JS, `export default mount(AppLive, Page)`); everywhere else it renders interactively. The same
+`rec(...)` value renders on both — see [Client & server](/docs/client-and-server/).
+
 ## Defining a service
 
 ```tsx

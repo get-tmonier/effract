@@ -17,8 +17,12 @@
  */
 import { Suspense, useState, type ReactNode } from 'react';
 import { rec, hook, observe } from '@tmonier/effract';
-import { statsBadge } from './bodies.tsx';
+import { StatsBadge } from './universal.tsx';
 import { Config, Greeter, Stats, Store } from './services.ts';
+
+// Re-exported so a page can pull every shared component from one place; the
+// same value also `serve`s on the server (see `./universal.tsx`).
+export { StatsBadge };
 
 const card = 'rounded-xl border border-slate-800 bg-slate-900/60 p-4';
 
@@ -38,12 +42,6 @@ function Footer(): ReactNode {
     </footer>
   );
 }
-
-/**
- * The service-only badge (its body lives in `./bodies.tsx`, so the same body
- * also renders as a React Server Component) as a client component.
- */
-export const StatsBadge = rec(statsBadge);
 
 /**
  * The headline: a genuine `useState` hook and an Effect service, interleaved in

@@ -11,7 +11,13 @@ import * as Layer from 'effect/Layer';
 import * as ManagedRuntime from 'effect/ManagedRuntime';
 import { hook } from '#domain/protocol.ts';
 import { driveRec } from '#application/interpreter.ts';
-import type { Executor, InterpreterDeps, RenderCache, Suspender } from '#application/ports.ts';
+import type {
+  Executor,
+  InterpreterDeps,
+  Placer,
+  RenderCache,
+  Suspender,
+} from '#application/ports.ts';
 
 class Stats extends Context.Service<Stats, { readonly total: number }>()('test/Stats') {}
 
@@ -32,6 +38,12 @@ const neverSuspend: Suspender = {
   },
 };
 
+const neverPlace: Placer = {
+  place: () => {
+    throw new Error('did not expect to place a child');
+  },
+};
+
 const makeDeps = (
   layer: Layer.Layer<never, never, never>,
   suspender: Suspender = neverSuspend,
@@ -39,6 +51,7 @@ const makeDeps = (
   executor: executorWith(layer),
   suspender,
   cache: new Map(),
+  placer: neverPlace,
 });
 
 describe('driveRec', () => {
@@ -108,6 +121,7 @@ describe('driveRec', () => {
       executor: deps.executor,
       cache: deps.cache,
       suspender: { use: () => 99 as never },
+      placer: neverPlace,
     };
     expect(driveRec(body(), retryDeps)).toBe(99);
   });
@@ -134,7 +148,12 @@ describe('driveRec', () => {
       return null;
     };
     expect(() =>
-      driveRec(body(), { executor: executorWith(Layer.empty), suspender: neverSuspend, cache }),
+      driveRec(body(), {
+        executor: executorWith(Layer.empty),
+        suspender: neverSuspend,
+        cache,
+        placer: neverPlace,
+      }),
     ).toThrow(TypeError);
   });
 });

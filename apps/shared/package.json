@@ -6,13 +6,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./services": "./src/services.ts",
-    "./bodies": "./src/bodies.tsx",
-    "./recs": "./src/recs.tsx",
-    "./server": "./src/server.tsx"
+    "./universal": "./src/universal.tsx",
+    "./recs": "./src/recs.tsx"
   },
   "dependencies": {
     "@tmonier/effract": "workspace:*",
-    "@tmonier/effract-rsc": "workspace:*",
     "effect": "catalog:",
     "react": "catalog:"
   },

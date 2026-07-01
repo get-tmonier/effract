@@ -2,8 +2,8 @@
 
 Write React components as Effect programs. A React Effect Component (REC) is a real React component whose
 body is a generator effract drives **inside React's render pass** — `yield*` an Effect service or
-`yield* hook(useState(...))` a real React hook. The same body runs in a SPA, on a server, in a Web Worker,
-or (resolve-up-front) as an RSC. See [ADR 0001](./docs/adr/0001-fiber-reconciliation.md).
+`yield* hook(useState(...))` a real React hook. The same body — and the same `mount` — runs in a SPA,
+during SSR, or (resolve-up-front) as an RSC. See [ADR 0001](./docs/adr/0001-fiber-reconciliation.md).
 
 ## Task runner
 
@@ -25,13 +25,16 @@ enforced by dependency-cruiser:
 ```
 packages/<name>/src/
   domain/           pure protocol + types — Effect vocabulary, never React
-  application/      the interpreter + ports — React-free, capabilities injected
-  infrastructure/   adapters — the React binding, the Flight renderer, the worker
-  index.ts          the only composition seam (plus subpath entries)
+  application/      the interpreter + the server driver — React-free, capabilities injected
+  infrastructure/   adapters — the client React binding (react/), the server mount (server/)
+  index.client.ts   the `default` export condition (client mount)
+  index.server.ts   the `react-server` export condition (server mount)
 ```
 
-- `@tmonier/effract` — core (rec/view/hook/mount/signals).
-- `@tmonier/effract-rsc` — Flight server renderer + Web Worker + `/driver`.
+- `@tmonier/effract` — everything: `rec`/`view`/`hook`/signals + `mount`. `mount` has a client and a
+  server implementation in one package; the `react-server` export condition (in `package.json`) picks
+  which, so a server module and a client module import the identical `mount`. Peers: `react` + `effect`
+  only — no Flight/`react-server-dom` dependency.
 - `@tmonier/effract-vite` — Vite plugin.
 - `apps/shared` — the services + composed `AppLive` layer + components every example renders.
 - `examples/` — typechecked call-site recipes.
@@ -42,7 +45,9 @@ packages/<name>/src/
 - `#domain/*`, `#application/*`, `#infrastructure/*` resolve via each package's package.json `imports`
   field — **not** tsconfig `paths` (which would mis-resolve across packages). Typecheck is one root
   `tsgo` program over all `src` (no project references — tsgo + composite + noEmit conflict).
-- Client-only modules (`component`, `runtime`, `reactivity`) carry `'use client'`; server-safe REC bodies
-  live in modules with no client imports so they also drive as RSCs.
+- Client-only modules (the `rec` client binding, `runtime`, `reactivity`) carry `'use client'`. The
+  `rec`/`view` descriptor (`rec-core`) and the server driver are client-free, so a service-only `rec(...)`
+  is one value that the same `mount` renders on the client and on the server — no separate server form. A
+  body that imports a hook makes its own module client-only; those RECs stay client islands.
 - No abusive lint suppressions. Targeted single-line ignores with a rule code and a reason only.
 - Tests behavioural and renderer-agnostic where possible — the interpreter is unit-tested with no DOM.
